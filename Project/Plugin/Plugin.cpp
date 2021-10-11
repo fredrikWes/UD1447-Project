@@ -165,7 +165,7 @@ void NodeAdded(MObject& node, void* clientData)
 	{
 		case MFn::Type::kMesh:
 		{
-			NodeAddedMessage message(NODETYPE::MODEL, nodeName.asChar(), nodeName.length());
+			NodeAddedMessage message(NODETYPE::MESH, nodeName.asChar(), nodeName.length());
 			memory.Send(&message, message.Size());
 			break;
 		}

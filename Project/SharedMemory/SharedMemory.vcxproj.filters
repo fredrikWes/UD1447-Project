@@ -15,11 +15,11 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CircularBuffer.h">
+    <ClInclude Include="FileMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FileMap.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="CircularBuffer.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SharedMemory.h">
       <Filter>Header Files</Filter>
@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SharedMemory.cpp">
-      <Filter>Header Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
