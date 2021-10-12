@@ -5,10 +5,11 @@
 struct FileMap
 {
 	const std::string name = "FILEMAP";
-	const size_t size = 200 * 1024;
+	const size_t size = 100;
 
 	HANDLE object;
 	void* view = nullptr;
+	bool exists = false;
 
 	FileMap()
 	{
@@ -16,6 +17,9 @@ struct FileMap
 
 		if (object == NULL)
 			return;
+
+		if (GetLastError() == ERROR_ALREADY_EXISTS)
+			exists = true;
 
 		view = MapViewOfFile(object, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 	}

@@ -1,6 +1,7 @@
 #include <iostream>
 #include "SharedMemory.h"
 #include "MayaIncludes.h"
+#include <queue>
 
 using namespace std;
 
@@ -11,6 +12,27 @@ MStatus status = MS::kSuccess;
 double timeElapsed = 0;
 
 SharedMemory memory;
+
+queue<Message*> messages;
+
+#undef SendMessage
+bool SendMessage(Message* message)
+{
+	void* data;
+	bool sent = false;
+
+	auto nodeAdded = dynamic_cast<NodeAddedMessage*>(message);
+	if (nodeAdded)
+	{
+		cout << "trying to send: " << nodeAdded->name << endl;
+
+		data = nodeAdded->Data();
+		sent = memory.Send(data, nodeAdded->Size());
+		delete data;
+	}
+
+	return sent;
+}
 
 //NODE ADDED
 void NodeAdded(MObject& node, void* clientData)
@@ -24,10 +46,8 @@ void NodeAdded(MObject& node, void* clientData)
 	{
 		case MFn::Type::kMesh:
 		{
-			NodeAddedMessage message(NODETYPE::POINTLIGHT, (char*)nodeName.asChar(), nodeName.numChars());
-			auto data = message.Data();
-			memory.Send(data, message.Size());
-			delete data;
+			Message* message = new NodeAddedMessage(NODETYPE::MESH, (char*)nodeName.asChar(), nodeName.numChars());
+			messages.push(message);
 			break;
 		}
 	}
@@ -48,6 +68,14 @@ void TimerCallback(float elapsedTime, float lastTime, void* clientData)
 {
 	timeElapsed += elapsedTime;
 	cout << "\n============================= > TIME: " << timeElapsed << " < =============================" << endl;
+
+	cout << messages.size() << endl;
+	if (!messages.empty())
+	{
+		bool sent = SendMessage(messages.front());
+		if (sent)
+			messages.pop();
+	}
 }
 
 //INITIALIZE
@@ -63,8 +91,6 @@ EXPORT MStatus initializePlugin(MObject obj)
 		return res;
 	}
 
-	
-
 	std::cout.set_rdbuf(MStreamUtils::stdOutStream().rdbuf());
 	std::cerr.set_rdbuf(MStreamUtils::stdErrorStream().rdbuf());
 
@@ -74,13 +100,13 @@ EXPORT MStatus initializePlugin(MObject obj)
 	if (status != MS::kSuccess)
 		return status;
 
-	//callbackIdArray.append(MDGMessage::addNodeRemovedCallback(NodeRemoved, "dependNode", NULL, &status));
-	//if (status != MS::kSuccess)
-	//	return status;
+	/*callbackIdArray.append(MDGMessage::addNodeRemovedCallback(NodeRemoved, "dependNode", NULL, &status));
+	if (status != MS::kSuccess)
+		return status;*/
 
-	//callbackIdArray.append(MTimerMessage::addTimerCallback(5.0, TimerCallback, NULL, &status));
-	//if (status != MS::kSuccess)
-	//	return status;
+	callbackIdArray.append(MTimerMessage::addTimerCallback(0.1, TimerCallback, NULL, &status));
+	if (status != MS::kSuccess)
+		return status;
 
 	return res;
 }

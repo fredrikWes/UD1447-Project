@@ -13,6 +13,9 @@ struct Message
 		memcpy(&messageSize, data, sizeof(size_t));
 		memcpy(&type, data + sizeof(size_t), sizeof(NODETYPE));
 	}
+
+	virtual void* Data() { return nullptr; };
+	virtual size_t Size() { return 0; };
 };
 
 struct NodeAddedMessage : public Message
@@ -32,7 +35,7 @@ struct NodeAddedMessage : public Message
 
 	NodeAddedMessage(NODETYPE type, char* name, size_t nameLength) : nameLength(nameLength + 1) { this->messageSize = 0; this->name = name; this->type = type; }
 
-	void* Data() 
+	virtual void* Data() override
 	{
 		size_t location = 0;
 		char* data = new char[Size()];
@@ -51,5 +54,5 @@ struct NodeAddedMessage : public Message
 		return data;
 	}
 
-	size_t Size() { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + nameLength; return messageSize; }
+	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + nameLength; return messageSize; }
 };
