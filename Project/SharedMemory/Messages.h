@@ -2,8 +2,6 @@
 enum class NODETYPE { MESH, POINTLIGHT, CAMERA };
 enum class ATTRIBUTETYPE { GEOMETRY, TRANSFORM };
 
-#define MAX_STR 100
-
 struct Message
 {
 	size_t messageSize;
@@ -17,13 +15,19 @@ struct NodeAddedMessage : public Message
 
 	NodeAddedMessage(char* data)
 	{
-		memcpy(&messageSize, data, sizeof(size_t));
-		memcpy(&type, data + sizeof(size_t), sizeof(NODETYPE));
-		memcpy(&nameLength, data + sizeof(size_t) + sizeof(NODETYPE), sizeof(size_t));
+		//memcpy(&messageSize, data, sizeof(size_t));
+		//memcpy(&type, data + sizeof(size_t), sizeof(NODETYPE));
+		//memcpy(&nameLength, data + sizeof(size_t) + sizeof(NODETYPE), sizeof(size_t));
 		name = new char[nameLength];
 		strcpy_s(name, nameLength, data + sizeof(size_t) + sizeof(NODETYPE) + sizeof(size_t));
 	}
 
-	NodeAddedMessage(NODETYPE type, char* name, size_t nameLength) : nameLength(nameLength + 1) { this->messageSize = 0; this->name = name; this->type = type; }
+	void Test(char* data)
+	{
+		name = new char[nameLength];
+		strcpy_s(name, nameLength, data + sizeof(size_t) + sizeof(NODETYPE) + sizeof(size_t));
+	}
+
+	NodeAddedMessage(NODETYPE type, char* name, size_t nameLength) : nameLength(nameLength + 1) { this->messageSize = 0; this->name = name + '\0'; this->type = type; }
 	size_t Size() { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + nameLength; return messageSize; }
 };

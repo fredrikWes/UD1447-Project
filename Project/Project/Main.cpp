@@ -9,9 +9,12 @@ int main()
 
 	memory.Receive(test, msgSize);
 
-	NodeAddedMessage msg(test);
+	NodeAddedMessage* msg = (NodeAddedMessage*)test;
+	msg->Test(test);
 
-	std::cout << msg.messageSize << " " << msg.nameLength << " " << (UINT)msg.type << " " << msg.name << std::endl;
+	auto len = strlen(msg->name);
+
+	std::cout << msg->messageSize << " " << msg->nameLength << " " << (UINT)msg->type << std::endl;
 
 	delete[] test;
 
