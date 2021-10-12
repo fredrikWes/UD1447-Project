@@ -4,19 +4,31 @@ int main()
 {
 	SharedMemory memory;
 
-	char* test = new char[memory.MemorySize() / 2];
+	char* data = new char[memory.MemorySize() / 2];
 	size_t msgSize = 0;
 
-	memory.Receive(test, msgSize);
+	memory.Receive(data, msgSize);
 
-	NodeAddedMessage* msg = (NodeAddedMessage*)test;
-	msg->Test(test);
+	Message msg(data);
 
-	auto len = strlen(msg->name);
+	switch (msg.type)
+	{
+		case NODETYPE::MESH:
+		{
+			NodeAddedMessage nodeMsg(data);
+			std::cout << nodeMsg.messageSize << " " << nodeMsg.nameLength << " " << (UINT)nodeMsg.type << " " << nodeMsg.name << std::endl;
+			break;
+		}
 
-	std::cout << msg->messageSize << " " << msg->nameLength << " " << (UINT)msg->type << std::endl;
-
-	delete[] test;
+		case NODETYPE::POINTLIGHT:
+		{
+			NodeAddedMessage nodeMsg(data);
+			std::cout << nodeMsg.messageSize << " " << nodeMsg.nameLength << " " << (UINT)nodeMsg.type << " " << nodeMsg.name << std::endl;
+			break;
+		}	
+	}
+	
+	delete[] data;
 
 	(void)getchar();
 	return 0;

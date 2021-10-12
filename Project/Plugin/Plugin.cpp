@@ -24,8 +24,10 @@ void NodeAdded(MObject& node, void* clientData)
 	{
 		case MFn::Type::kMesh:
 		{
-			NodeAddedMessage message(NODETYPE::POINTLIGHT, (char*)nodeName.asChar(), nodeName.length());
-			memory.Send(&message, message.Size());
+			NodeAddedMessage message(NODETYPE::POINTLIGHT, (char*)nodeName.asChar(), nodeName.numChars());
+			auto data = message.Data();
+			memory.Send(data, message.Size());
+			delete data;
 			break;
 		}
 	}
