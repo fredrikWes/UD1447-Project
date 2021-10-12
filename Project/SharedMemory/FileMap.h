@@ -12,13 +12,10 @@ struct FileMap
 
 	FileMap()
 	{
-		object = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, (DWORD)0, size, name.c_str());
+		object = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, (DWORD)0, (DWORD)size, name.c_str());
 
 		if (object == NULL)
-		{
-			std::cout << "FAILED TO CREATE FILE MAP OBJECT" << std::endl;
 			return;
-		}
 
 		view = MapViewOfFile(object, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 	}

@@ -1,8 +1,6 @@
 #pragma once
 #include "CircularBuffer.h"
-
-enum class NODETYPE { MESH, POINTLIGHT, CAMERA };
-enum class ATTRIBUTETYPE { GEOMETRY, TRANSFORM };
+#include "Messages.h"
 
 class SharedMemory
 {
@@ -13,4 +11,5 @@ public:
 	SharedMemory();
 	bool Send(const void* data, const size_t size);
 	bool Receive(void* data, size_t& size);
+	size_t MemorySize() { return buffer.size; }
 };

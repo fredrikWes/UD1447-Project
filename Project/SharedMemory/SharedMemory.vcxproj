@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="CircularBuffer.h" />
     <ClInclude Include="FileMap.h" />
+    <ClInclude Include="Messages.h" />
     <ClInclude Include="SharedMemory.h" />
   </ItemGroup>
   <ItemGroup>

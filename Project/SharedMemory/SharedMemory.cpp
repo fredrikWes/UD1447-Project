@@ -36,6 +36,8 @@ bool SharedMemory::Receive(void* data, size_t& size)
     size_t messageSize = 0;
     memcpy(&messageSize, (char*)fileMap.view + CircularBuffer::dataLocation + buffer.tail, sizeof(UINT));
     size = messageSize;
+    
+    std::cout << messageSize << " " << buffer.head << std::endl;
 
     if (buffer.tail + size > buffer.size)
         buffer.tail = 0;
