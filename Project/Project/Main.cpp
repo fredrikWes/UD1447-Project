@@ -19,24 +19,13 @@ int main()
 
 		Message* msg = new Message(data);
 
-		switch (msg->type)
-		{
-		case NODETYPE::MESH:
-		{
-			NodeAddedMessage nodeMsg(data);
-			std::cout << nodeMsg.messageSize << " " << nodeMsg.nameLength << " " << (UINT)nodeMsg.type << " " << nodeMsg.name << std::endl;
-			break;
-		}
+		std::cout << msg->messageSize << " " << msg->nameLength << " " << (UINT)msg->nodeType << " " << (UINT)msg->messageType << " " << msg->name << std::endl;
 
-		case NODETYPE::POINTLIGHT:
-		{
-			NodeAddedMessage nodeMsg(data);
-			std::cout << nodeMsg.messageSize << " " << nodeMsg.nameLength << " " << (UINT)nodeMsg.type << " " << nodeMsg.name << std::endl;
-			break;
-		}
-		}
+		if (msg)
+			delete msg;
 
-		delete[] data;
+		if (data)
+			delete[] data;
 	}
 
 	(void)getchar();
