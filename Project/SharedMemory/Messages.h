@@ -1,7 +1,30 @@
 #pragma once
-enum class NODETYPE { MESH, POINTLIGHT, CAMERA, MATERIAL };
-enum class MESSAGETYPE { ADDED, REMOVED, CHANGED };
-enum class ATTRIBUTETYPE { GEOMETRY, TRANSFORM, TEXTURE, COLOR };
+enum class NODETYPE { MESH, DIRECTIONALLIGHT, CAMERA, MATERIAL, TRANSFORM, MATERIALCONNECTION };
+enum class MESSAGETYPE { ADDED, REMOVED, CHANGED, NAMECHANGE };
+
+//BEHÖVS EJ?
+//enum class ATTRIBUTETYPE { GEOMETRY, TEXTURE, COLOR };
+
+//------CASES------
+//MESH ADDED
+//MESH REMOVED
+//MESH CHANGED
+
+//TRANSFORM CHANGED
+
+//DIRECTIONALLIGHT ADDED
+//DIRECTIONALLIGHT REMOVED
+//DIRECTIONALLIGHT CHANGED
+
+//CAMERA ADDED
+//CAMERA REMOVED
+//CAMERA CHANGED
+
+//MATERIAL ADDED
+//MATERIAL REMOVED
+//MATERIAL CHANGED
+
+//SENDS WHOLE STRUCT ON CHANGE...?
 
 struct Vertex
 {
@@ -68,65 +91,49 @@ struct Message
 	virtual size_t Size() { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength; return messageSize; };
 };
 
-/*
-struct NodeAddedMessage : public Message
+struct CameraChangedMessage : public Message
 {
-	NodeAddedMessage(char* data)
+	float perspectiveMatrix[16];
+
+	struct ViewMatrixComponents
 	{
-		memcpy(&messageSize, data, sizeof(size_t));
-		memcpy(&type, data + sizeof(size_t), sizeof(NODETYPE));
-		memcpy(&nameLength, data + sizeof(size_t) + sizeof(NODETYPE), sizeof(size_t));
-		name = new char[nameLength];
-		strcpy_s(name, nameLength, data + sizeof(size_t) + sizeof(NODETYPE) + sizeof(size_t));
+		float position[3];
+		float direction[3];
+		float up[3];
+	} viewMatrixComponents;
+
+	CameraChangedMessage(size_t nameLength, char* name, ViewMatrixComponents viewMatrixComponents)
+		:Message(NODETYPE::CAMERA, MESSAGETYPE::CHANGED, nameLength, name)
+	{
+
 	}
 
-	NodeAddedMessage(NODETYPE type, char* name, size_t nameLength) : nameLength(nameLength + 1) { this->messageSize = 0; this->name = name; this->type = type; }
+	CameraChangedMessage(char* data)
+	{
+
+	}
 
 	virtual void* Data() override
 	{
-		size_t location = 0;
-		char* data = new char[Size()];
 
-		memcpy(data, &messageSize, sizeof(size_t));
-		location += sizeof(size_t);
-
-		memcpy(data + location, &type, sizeof(NODETYPE));
-		location += sizeof(NODETYPE);
-
-		memcpy(data + location, &nameLength, sizeof(size_t));
-		location += sizeof(size_t);
-
-		memcpy(data + location, name, nameLength);
-
-		return data;
 	}
-
-	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + nameLength; return messageSize; }
 };
-*/
 
-struct OutMeshChangedMessage : public Message
+struct MeshChangedMessage : public Message
 {
-	ATTRIBUTETYPE attributeType;
-
 	int numVertices;
 	Vertex* vertices;
 
-	int numIndices;
-	int* indices;
-
-	OutMeshChangedMessage(NODETYPE nodeType, MESSAGETYPE messageType, size_t nameLength, char* name, ATTRIBUTETYPE attributeType, Vertex* vertices, int numVertices, int* indices, int numIndices)
-		:Message(nodeType, messageType, nameLength, name), attributeType(attributeType), numVertices(numVertices), numIndices(numIndices), vertices(vertices), indices(indices) {}
-
-	~OutMeshChangedMessage()
+	MeshChangedMessage(NODETYPE nodeType, MESSAGETYPE messageType, size_t nameLength, char* name, Vertex* vertices, int numVertices)
+		:Message(nodeType, messageType, nameLength, name), numVertices(numVertices)
 	{
-		if (vertices)
-			delete vertices;
-		if (indices)
-			delete indices;
+		this->vertices = new Vertex[numVertices];
+		memcpy(this->vertices, vertices, sizeof(Vertex) * numVertices);
 	}
 
-	OutMeshChangedMessage(char* data)
+	~MeshChangedMessage() { delete vertices; }
+
+	MeshChangedMessage(char* data)
 	{
 		size_t location = 0;
 
@@ -146,24 +153,15 @@ struct OutMeshChangedMessage : public Message
 		strcpy_s(name, nameLength, data + location);
 		location += nameLength;
 
-		memcpy(&attributeType, data + location, sizeof(ATTRIBUTETYPE));
-		location += sizeof(ATTRIBUTETYPE);
-
 		memcpy(&numVertices, data + location, sizeof(int));
 		location += sizeof(int);
 
 		vertices = new Vertex[numVertices];
-		memcpy(&vertices, data + location, sizeof(Vertex) * numVertices);
+		memcpy(vertices, data + location, sizeof(Vertex) * numVertices);
 		location += sizeof(Vertex) * numVertices;
-
-		memcpy(&numIndices, data + location, sizeof(int));
-		location += sizeof(int);
-
-		indices = new int[numIndices];
-		memcpy(&indices, data + location, sizeof(int) * numIndices);
 	}
 
-	virtual void* Data()
+	virtual void* Data() override
 	{
 		size_t location = 0;
 		char* data = new char[Size()];
@@ -183,19 +181,14 @@ struct OutMeshChangedMessage : public Message
 		memcpy(data + location, name, nameLength);
 		location += nameLength;
 
-		memcpy(data, &numVertices, sizeof(int));
+		memcpy(data + location, &numVertices, sizeof(int));
 		location += sizeof(int);
 
 		memcpy(data + location, vertices, sizeof(Vertex) * numVertices);
 		location += sizeof(Vertex) * numVertices;
 
-		memcpy(data + location, &numIndices, sizeof(int));
-		location += sizeof(int);
-
-		memcpy(data + location, indices, sizeof(int) * numIndices);
-
 		return data;
 	}
 
-	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + sizeof(int) * 2 + sizeof(Vertex) * numVertices + sizeof(int) * numIndices; return messageSize; }
+	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + sizeof(int) + sizeof(Vertex) * numVertices; return messageSize; }
 };

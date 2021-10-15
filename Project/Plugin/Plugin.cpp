@@ -1,6 +1,5 @@
+#include "HelpFunctions.h"
 #include <iostream>
-#include "SharedMemory.h"
-#include "MayaIncludes.h"
 #include <queue>
 
 using namespace std;
@@ -17,18 +16,60 @@ queue<Message*> messages;
 
 std::map<string, MPointArray*> vertexCache;
 
+//Called pre-render for every panel, make sure camera update only occurs for the active panel
+void cameraMoved(const MString& str, void* clientData)
+{
+	MString cmd = "getPanel -wf"; //wf = with focus (current panel)
+	MString activePanel = MGlobal::executeCommandStringResult(cmd);
+
+	if (strcmp(str.asChar(), activePanel.asChar()) == 0) {
+		//M3dView currentView = M3dView();
+		//MMatrix matrix;
+		////CameraData camData;
+
+		//currentView.updateViewingParameters();
+
+		//currentView.modelViewMatrix(matrix);
+		////matrix.get(camData.viewMatrix);
+
+		//currentView.projectionMatrix(matrix);
+		//matrix.get(camData.projectionMatrix);
+
+		// Send matrices to viewer
+	}
+}
+
 #undef SendMessage
 bool SendMessage(Message* message)
 {
 	void* data;
 	bool sent = false;
 
-	auto nodeAdded = dynamic_cast<Message*>(message);
-	if (nodeAdded)
+	switch (message->nodeType)
 	{
-		data = nodeAdded->Data();
-		sent = memory.Send(data, nodeAdded->Size());
-		delete data;
+		case NODETYPE::MESH:
+		{
+			if (message->messageType == MESSAGETYPE::ADDED || message->messageType == MESSAGETYPE::REMOVED)
+			{
+				data = message->Data();
+				sent = memory.Send(data, message->Size());
+				delete data;
+			}
+
+			else if (message->messageType == MESSAGETYPE::CHANGED)
+			{
+				auto meshChanged = static_cast<MeshChangedMessage*>(message);
+				cout << "---TRYING TO SEND MESH CHANGED MESSAGE---" << endl;
+				cout << meshChanged->Size() << " " << meshChanged->name << " " << meshChanged->vertices[0].Px << endl;
+				data = meshChanged->Data();
+				sent = memory.Send(data, meshChanged->Size());
+				if (sent)
+					cout << "---SENT MESH CHANGED MESSAGE---" << endl;
+				delete data;
+			}
+
+			break;
+		}
 	}
 
 	return sent;
@@ -57,6 +98,11 @@ void MaterialChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &oth
 }
 
 void TransformChanged(/*ARGS*/)
+{
+
+}
+
+void CameraChanged()
 {
 
 }
@@ -97,73 +143,11 @@ void MeshChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPl
 	{
 		cout << "\n============================= GEOMETRY CHANGED =============================" << endl;
 
-		MIntArray localIndex;
+		std::vector<Vertex> vertices;
+		ProcessMesh(mesh, vertices);
 
-		MIntArray triangles;
-		MIntArray triangleVertices;
-		status = mesh.getTriangles(triangles, triangleVertices);
-		if (status != MS::kSuccess)
-			return;
-
-		MIntArray vertexCount;
-		MIntArray vertexList;
-		status = mesh.getVertices(vertexCount, vertexList);
-		if (status != MS::kSuccess)
-			return;
-
-		MFloatVectorArray normals;
-		status = mesh.getNormals(normals);
-		if (status != MS::kSuccess)
-			return;
-
-		MFloatArray us;
-		MFloatArray vs;
-		status = mesh.getUVs(us, vs);
-		if (status != MS::kSuccess)
-			return;
-
-		cout << normals.length() << endl;
-		cout << normals;
-		cout << us.length() << endl;
-		cout << us;
-		cout << vs.length() << endl;
-		cout << vs;
-
-		MPointArray vertices;
-		mesh.getPoints(vertices);
-
-		for (size_t localVertTri = 0; localVertTri < triangleVertices.length(); ++localVertTri)
-		{
-			for (size_t localVertPoly = 0; localVertPoly < vertexList.length(); ++localVertPoly)
-			{
-				if (triangleVertices[localVertTri] == vertexList[localVertPoly])
-				{
-					localIndex.append(localVertPoly);
-					break;
-				}
-			}
-		}
-
-		for (UINT i = 0; i < mesh.numVertices(); ++i)
-		{
-			Vertex vertex = {};
-			
-			vertex.Px = vertices[i].x;
-			vertex.Py = vertices[i].y;
-			vertex.Pz = vertices[i].z;
-
-			vertex.nX = normals[i].x;
-			vertex.nY = normals[i].y;
-			vertex.nZ = normals[i].z;
-
-			vertex.u = us[i];
-			vertex.v = vs[i];
-		}
-
-		//Message* message = new OutMeshChangedMessage(NODETYPE::MESH, MESSAGETYPE::CHANGED, nodeName.length(), (char*)nodeName.c_str(), ATTRIBUTETYPE::GEOMETRY, nullptr, 0, nullptr, 0);
-		//messages.push(message);
-		//cout << vertices << endl;
-		//cout << localIndex << endl;
+		MeshChangedMessage* message = new MeshChangedMessage(NODETYPE::MESH, MESSAGETYPE::CHANGED, MFnDependencyNode(node, &status).name().numChars(), (char*)MFnDependencyNode(node, &status).name().asChar(), vertices.data(), vertices.size());
+		messages.push(message);
 	}
 }
 
@@ -216,6 +200,7 @@ void TimerCallback(float elapsedTime, float lastTime, void* clientData)
 {
 	if (!messages.empty())
 	{
+		cout << "SENDING MESSAGE" << endl;
 		bool sent = SendMessage(messages.front());
 		if (sent)
 			messages.pop();
@@ -239,6 +224,20 @@ EXPORT MStatus initializePlugin(MObject obj)
 	std::cerr.set_rdbuf(MStreamUtils::stdErrorStream().rdbuf());
 
 	cout << "============================= >>>> PLUGIN LOADED <<<< =============================" << endl;
+
+	MItDag iterator(MItDag::kDepthFirst, MFn::kDagNode, &status);
+	if (status != MS::kSuccess)
+		return status;
+	for (; !iterator.isDone(); iterator.next())
+	{
+		cout << iterator.currentItem().apiTypeStr() << endl;
+	}
+
+	////Add callbacks for persp and ortographic panels
+	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel1", cameraMoved);
+	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel2", cameraMoved);
+	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel3", cameraMoved);
+	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel4", cameraMoved);
 
 	callbackIdArray.append(MDGMessage::addNodeAddedCallback(NodeAdded, "dependNode", NULL, &status));
 	if (status != MS::kSuccess)

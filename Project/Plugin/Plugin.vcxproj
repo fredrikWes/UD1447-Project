@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="HelpFunctions.h" />
     <ClInclude Include="MayaIncludes.h" />
   </ItemGroup>
   <ItemGroup>
