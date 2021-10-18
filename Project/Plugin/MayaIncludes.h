@@ -1,6 +1,8 @@
 #pragma once
 
 #define EXPORT __declspec(dllexport)
+
+#include <maya/M3dView.h>
 #include <maya/MStreamUtils.h>
 #include <maya/MFloatMatrix.h>
 #include <maya/MItMeshVertex.h>
@@ -26,7 +28,6 @@
 #include <maya/MEulerRotation.h>
 #include <maya/MVector.h>
 #include <maya/MItDag.h>
-#include <maya/M3dView.h>
 #include <maya/MItMeshPolygon.h>
 #include <maya/MPlugArray.h>
 #include <maya/MSelectionList.h>
