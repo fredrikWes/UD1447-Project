@@ -3,7 +3,7 @@
 #include "SharedMemory.h"
 #include <vector>
 
-inline Vertex ProcessVertex(MFnMesh& mesh, UINT polygonID, UINT vertexID)
+inline Vertex ProcessVertex(MFnMesh& mesh, UINT polygonID, UINT vertexID, MIntArray vertexList)
 {
 	float u, v;
 	MVector normal;
@@ -11,7 +11,9 @@ inline Vertex ProcessVertex(MFnMesh& mesh, UINT polygonID, UINT vertexID)
 
 	mesh.getPolygonUV(polygonID, vertexID, u, v);
 	mesh.getPolygonNormal(polygonID, normal);
-	mesh.getPoint(vertexID, position);
+
+	UINT meshRelativeIndex = vertexList[vertexID];
+	mesh.getPoint(meshRelativeIndex, position);
 
 	Vertex vertex
 	{
@@ -20,15 +22,13 @@ inline Vertex ProcessVertex(MFnMesh& mesh, UINT polygonID, UINT vertexID)
 		u, v
 	};
 
-	cout << "VERTEX: " << vertexID << " POS: " << position << " NORMAL: " << normal << " UVs: " << u << "," << v << endl;
-
 	return vertex;
 }
 
 inline void ProcessTriangle(MFnMesh& mesh, UINT polygonID, MIntArray vertexList, UINT numVertices, std::vector<Vertex>& vertices)
 {
-	for (UINT j = numVertices - 1; j >= 0; --j)
-		vertices.emplace_back(ProcessVertex(mesh, polygonID, j));
+	for (UINT j = numVertices; j > 0; --j)
+		vertices.emplace_back(ProcessVertex(mesh, polygonID, j - 1, vertexList));
 }
 
 inline void ProcessQuad(MFnMesh& mesh, UINT polygonID, MIntArray vertexList, UINT numVertices, std::vector<Vertex>& vertices)
@@ -36,7 +36,7 @@ inline void ProcessQuad(MFnMesh& mesh, UINT polygonID, MIntArray vertexList, UIN
 	const UINT IDs[] = { 2, 3, 0, 3, 1, 0 };
 
 	for (auto& ID : IDs)
-		vertices.emplace_back(ProcessVertex(mesh, polygonID, ID));
+		vertices.emplace_back(ProcessVertex(mesh, polygonID, ID, vertexList));
 }
 
 inline void ProcessMesh(MFnMesh& mesh, std::vector<Vertex>& vertices)

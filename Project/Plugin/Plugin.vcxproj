@@ -125,7 +125,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)/x64/Debug;D:\Autodesk\Maya2022\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Foundation.lib;OpenMaya.lib;OpenMayaAnim.lib;SharedMemory.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Foundation.lib;OpenMaya.lib;OpenMayaAnim.lib;SharedMemory.lib;OpenMayaUI.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -145,7 +145,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)/x64/Debug;D:\Autodesk\Maya2022\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Foundation.lib;OpenMaya.lib;OpenMayaAnim.lib;SharedMemory.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Foundation.lib;OpenMaya.lib;OpenMayaAnim.lib;SharedMemory.lib;OpenMayaUI.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

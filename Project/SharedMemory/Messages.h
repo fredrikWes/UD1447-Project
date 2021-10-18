@@ -91,30 +91,64 @@ struct Message
 
 struct CameraChangedMessage : public Message
 {
-	float perspectiveMatrix[16];
+	float matrix[16];
 
-	struct ViewMatrixComponents
-	{
-		float position[3];
-		float direction[3];
-		float up[3];
-	} viewMatrixComponents;
-
-	CameraChangedMessage(size_t nameLength, char* name, ViewMatrixComponents viewMatrixComponents)
+	CameraChangedMessage(size_t nameLength, char* name, float matrix[])
 		:Message(NODETYPE::CAMERA, MESSAGETYPE::CHANGED, nameLength, name)
 	{
-
+		for (UINT i = 0; i < 16; ++i)
+			this->matrix[i] = matrix[i];
 	}
 
 	CameraChangedMessage(char* data)
 	{
+		size_t location = 0;
 
+		memcpy(&messageSize, data + location, sizeof(size_t));
+		location += sizeof(size_t);
+
+		memcpy(&nodeType, data + location, sizeof(NODETYPE));
+		location += sizeof(NODETYPE);
+
+		memcpy(&messageType, data + location, sizeof(MESSAGETYPE));
+		location += sizeof(MESSAGETYPE);
+
+		memcpy(&nameLength, data + location, sizeof(size_t));
+		location += sizeof(size_t);
+
+		name = new char[nameLength];
+		strcpy_s(name, nameLength, data + location);
+		location += nameLength;
+
+		memcpy(matrix, data + location, sizeof(float) * 16);
 	}
 
 	virtual void* Data() override
 	{
+		size_t location = 0;
+		char* data = new char[Size()];
 
+		memcpy(data, &messageSize, sizeof(size_t));
+		location += sizeof(size_t);
+
+		memcpy(data + location, &nodeType, sizeof(NODETYPE));
+		location += sizeof(NODETYPE);
+
+		memcpy(data + location, &messageType, sizeof(MESSAGETYPE));
+		location += sizeof(MESSAGETYPE);
+
+		memcpy(data + location, &nameLength, sizeof(size_t));
+		location += sizeof(size_t);
+
+		memcpy(data + location, name, nameLength);
+		location += nameLength;
+
+		memcpy(data + location, matrix, sizeof(float) * 16);
+
+		return data;
 	}
+
+	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + sizeof(float) * 16; return messageSize; }
 };
 
 struct MeshChangedMessage : public Message

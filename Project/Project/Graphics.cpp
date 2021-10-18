@@ -1,5 +1,6 @@
 #include "Graphics.h"
 
+#include <iostream>
 #include <fstream>
 
 HRESULT Graphics::CreateDeviceSwapchain(UINT clientWidth, UINT clientHeight, HWND hWnd)
@@ -100,6 +101,7 @@ bool Graphics::Initialize(UINT clientWidth, UINT clientHeight, HWND hWnd)
 	context->RSSetViewports(1, &viewport);
 	context->OMSetRenderTargets(1, &backBuffer, dsView);
 
+	std::cout << ">>> SUCCEDDED TO INITIALIZE GRAPHICS <<<" << std::endl;
 	return true;
 }
 
@@ -166,9 +168,9 @@ void Graphics::BindConstantBuffer(ID3D11Buffer* buffer, Shader shader, UINT slot
 	}
 }
 
-void Graphics::BindVertexBuffer(ID3D11Buffer* buffer, const UINT* stride)
+void Graphics::BindVertexBuffer(ID3D11Buffer* buffer, const UINT* stride, const UINT* offset)
 {
-	context->IASetVertexBuffers(0, 1, &buffer, stride, 0);
+	context->IASetVertexBuffers(0, 1, &buffer, stride, offset);
 }
 
 bool Graphics::CreateTexture2D(ID3D11Texture2D*& texture, const D3D11_TEXTURE2D_DESC* desc, const D3D11_SUBRESOURCE_DATA* data)
@@ -257,4 +259,9 @@ void Graphics::BindShaders(ID3D11VertexShader* vertexShader, ID3D11PixelShader* 
 void Graphics::SetTopology(D3D11_PRIMITIVE_TOPOLOGY topology)
 {
 	context->IASetPrimitiveTopology(topology);
+}
+
+void Graphics::Draw(UINT vertexCount)
+{
+	context->Draw(vertexCount, 0);
 }

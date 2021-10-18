@@ -24,5 +24,6 @@ void Mesh::Draw()
 	if (!vertexBuffer)
 		return;
 
-	Graphics::BindVertexBuffer(vertexBuffer, &Mesh::stride);
+	Graphics::BindVertexBuffer(vertexBuffer, &Mesh::stride, &Mesh::offset);
+	Graphics::Draw(vertexCount);
 }

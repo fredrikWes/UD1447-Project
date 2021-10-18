@@ -18,11 +18,11 @@ private:
 
 	//SHADER PATHS
 #ifdef _DEBUG
-	const std::string vs_path = "";
-	const std::string ps_path = "";
+	const std::string vs_path = "../x64/Debug/VertexShader.cso";
+	const std::string ps_path = "../x64/Debug/PixelShader.cso";
 #else
-	const std::string vs_path = "";
-	const std::string ps_path = "";
+	const std::string vs_path = "../x64/Release/VertexShader.cso";
+	const std::string ps_path = "../x64/Release/PixelShader.cso";
 #endif
 
 	//SHADERS

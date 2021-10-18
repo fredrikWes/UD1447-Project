@@ -7,7 +7,7 @@ enum class Shader { VS, PS };
 class Graphics
 {
 private:
-	static constexpr float backgroundColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	static constexpr float backgroundColor[4] = { 0.1f, 0.2f, 0.5f, 1.0f };
 
 	static D3D11_VIEWPORT viewport;
 	static ID3D11Device* device;
@@ -39,7 +39,7 @@ public:
 	static bool CreateVertexBuffer(ID3D11Buffer*& buffer, int stride, int numElements, const void* data);
 
 	static void BindConstantBuffer(ID3D11Buffer* buffer, Shader shader = Shader::VS, UINT slot = 0);
-	static void BindVertexBuffer(ID3D11Buffer* buffer, const UINT* stride);
+	static void BindVertexBuffer(ID3D11Buffer* buffer, const UINT* stride, const UINT* offset);
 
 	//TEXTURE2D
 	static bool CreateTexture2D(ID3D11Texture2D*& texture, const D3D11_TEXTURE2D_DESC* desc, const D3D11_SUBRESOURCE_DATA* data);
@@ -60,6 +60,7 @@ public:
 
 	//MISC
 	static void SetTopology(D3D11_PRIMITIVE_TOPOLOGY topology);
+	static void Draw(UINT vertexCount);
 };
 
 inline D3D11_VIEWPORT Graphics::viewport;

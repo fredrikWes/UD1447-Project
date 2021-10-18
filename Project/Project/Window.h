@@ -4,7 +4,7 @@
 
 class Window
 {
-	friend class WindowCreator;
+	friend struct WindowCreator;
 private:
 	static bool wantExit;
 
