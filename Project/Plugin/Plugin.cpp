@@ -107,8 +107,6 @@ void CameraChanged(const MString& str, void* clientData)
 			}
 		}
 
-		cout << matrix << endl;
-
 		Message* message = new CameraChangedMessage(activePanel.numChars(), (char*)activePanel.asChar(), matrixArr);
 		messages.push(message);
 	}
@@ -237,7 +235,6 @@ void TimerCallback(float elapsedTime, float lastTime, void* clientData)
 {
 	if (!messages.empty())
 	{
-		cout << "SENDING MESSAGE" << endl;
 		bool sent = SendMessage(messages.front());
 		if (sent)
 			messages.pop();
@@ -262,10 +259,10 @@ EXPORT MStatus initializePlugin(MObject obj)
 
 	cout << "============================= >>>> PLUGIN LOADED <<<< =============================" << endl;
 
-	MUiMessage::add3dViewPreRenderMsgCallback("modelPanel1", CameraChanged);
-	MUiMessage::add3dViewPreRenderMsgCallback("modelPanel2", CameraChanged);
-	MUiMessage::add3dViewPreRenderMsgCallback("modelPanel3", CameraChanged);
-	MUiMessage::add3dViewPreRenderMsgCallback("modelPanel4", CameraChanged);
+	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel1", CameraChanged);
+	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel2", CameraChanged);
+	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel3", CameraChanged);
+	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel4", CameraChanged);
 
 	callbackIdArray.append(MDGMessage::addNodeAddedCallback(NodeAdded, "dependNode", NULL, &status));
 	if (status != MS::kSuccess)
