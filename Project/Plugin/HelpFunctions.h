@@ -3,6 +3,8 @@
 #include "SharedMemory.h"
 #include <vector>
 
+std::map<std::string, std::vector<Vertex>> vertexCache;
+
 inline Vertex ProcessVertex(MFnMesh& mesh, UINT polygonID, UINT vertexID, MIntArray vertexList)
 {
 	float u, v;
@@ -17,9 +19,9 @@ inline Vertex ProcessVertex(MFnMesh& mesh, UINT polygonID, UINT vertexID, MIntAr
 
 	Vertex vertex
 	{
-		position.x, position.y, position.z,
+		position.z, position.y, position.x,
 		normal.x, normal.y, normal.z,
-		u, v
+		u, 1 - v
 	};
 
 	return vertex;
@@ -33,7 +35,7 @@ inline void ProcessTriangle(MFnMesh& mesh, UINT polygonID, MIntArray vertexList,
 
 inline void ProcessQuad(MFnMesh& mesh, UINT polygonID, MIntArray vertexList, UINT numVertices, std::vector<Vertex>& vertices)
 {
-	const UINT IDs[] = { 2, 3, 0, 3, 1, 0 };
+	const UINT IDs[] = { 0, 3, 2, 0, 2, 1 };
 
 	for (auto& ID : IDs)
 		vertices.emplace_back(ProcessVertex(mesh, polygonID, ID, vertexList));
@@ -58,4 +60,28 @@ inline void ProcessMesh(MFnMesh& mesh, std::vector<Vertex>& vertices)
 		else
 			cout << ">>N-GONS NOT SUPPORTED<<\n";
 	}
+
+	if (vertexCache.find(mesh.name().asChar()) == vertexCache.end())
+	{
+		vertexCache[mesh.name().asChar()] = vertices;
+		return;
+	}
+		
+	auto& oldVertices = vertexCache.at(mesh.name().asChar());
+
+	for (UINT i = 0; i < vertices.size(); ++i)
+	{
+		if (i < oldVertices.size())
+		{
+			if (vertices[i] == oldVertices[i])
+			{
+				vertices.erase(vertices.begin() + i);
+				--i;
+			}
+		}
+	}
+
+	std::cout << "SENT " << vertices.size() << std::endl;
+
+	vertexCache[mesh.name().asChar()] = vertices;
 }

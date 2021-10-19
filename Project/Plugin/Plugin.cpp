@@ -14,8 +14,6 @@ SharedMemory memory;
 
 queue<Message*> messages;
 
-std::map<string, MPointArray*> vertexCache;
-
 #undef SendMessage
 bool SendMessage(Message* message)
 {
@@ -60,8 +58,8 @@ void MaterialChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &oth
 		cout << "\n============================= MATERIAL CHANGED =============================" << endl;
 		cout << plug.name() << endl;
 
-		MFnPhongShader shader(plug.node());
-		cout << shader.absoluteName() << endl;
+		//MFnPhongShader shader(plug.node());
+		//cout << shader.absoluteName() << endl;
 	}
 
 	if (msg & MNodeMessage::AttributeMessage::kConnectionMade || msg & MNodeMessage::AttributeMessage::kConnectionBroken)
@@ -69,8 +67,8 @@ void MaterialChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &oth
 		cout << "\n============================= MATERIAL TEXTURE CONNECTION CHANGED =============================" << endl;
 		cout << plug.name() << endl;
 
-		MFnPhongShader shader(plug.node());
-		cout << shader.absoluteName() << endl;
+		//MFnPhongShader shader(plug.node());
+		//cout << shader.absoluteName() << endl;
 	}
 }
 
@@ -272,7 +270,7 @@ EXPORT MStatus initializePlugin(MObject obj)
 	if (status != MS::kSuccess)
 		return status;
 
-	callbackIdArray.append(MTimerMessage::addTimerCallback(0.0, TimerCallback, NULL, &status));
+	callbackIdArray.append(MTimerMessage::addTimerCallback(0.001, TimerCallback, NULL, &status));
 	if (status != MS::kSuccess)
 		return status;
 

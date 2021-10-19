@@ -29,6 +29,16 @@ struct Vertex
 	float Px, Py, Pz;
 	float nX, nY, nZ;
 	float u, v;
+
+	bool operator==(const Vertex& other)
+	{
+		if (Px == other.Px && Py == other.Py && Pz == other.Pz &&
+			nX == other.nX && nY == other.nY && nZ == other.nZ &&
+			u == other.u && v == other.v)
+			return true;
+
+		return false;
+	}
 };
 
 struct Message
