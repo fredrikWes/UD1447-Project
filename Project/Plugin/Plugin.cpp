@@ -57,17 +57,57 @@ void MaterialChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &oth
 {
 	if (msg & MNodeMessage::AttributeMessage::kAttributeSet)
 	{
+
 		cout << "\n============================= MATERIAL CHANGED =============================" << endl;
 		cout << plug.name() << endl;
 
+
+
 		MFnPhongShader shader(plug.node());
 		cout << shader.absoluteName() << endl;
+		cout << "Shader Color values: " << shader.color().r << " " << shader.color().g << " " << shader.color().b << endl;
 	}
 
 	if (msg & MNodeMessage::AttributeMessage::kConnectionMade || msg & MNodeMessage::AttributeMessage::kConnectionBroken)
 	{
 		cout << "\n============================= MATERIAL TEXTURE CONNECTION CHANGED =============================" << endl;
 		cout << plug.name() << endl;
+
+
+		//MFnPhongShader test(plug.node());
+		//MPlugArray plugArr;
+		//test.getConnections(plugArr);
+		//
+		//for (int i = 0; i < plugArr.length(); i++)
+		//{
+		//	cout << plugArr[i].name() << endl;
+		//}
+
+		//MPlug testName = test.findPlug((MString)"fileTextureName", false, &status);
+		//MString filePath;
+		//testName.getValue(filePath);
+	
+
+	/*	MFnDependencyNode texture(plug.node());
+		MPlug textureName = texture.findPlug((MString)"fileTextureName", false, &status);
+		MString filePath;
+		textureName.getValue(filePath);
+		cout << filePath << endl;*/
+
+		
+		MItDependencyGraph dtIt()
+
+		
+
+
+
+		if (plug.node().hasFn(MFn::kFileTexture))
+		{
+	
+
+		
+
+		}
 
 		MFnPhongShader shader(plug.node());
 		cout << shader.absoluteName() << endl;
@@ -164,7 +204,7 @@ void NodeAdded(MObject& node, void* clientData)
 
 	bool found = false;
 	MString nodeName = MFnDependencyNode(node).name();
-	cout << node.apiTypeStr() << endl;
+	//cout << node.apiTypeStr() << endl;
 
 	switch (node.apiType())
 	{
@@ -184,6 +224,7 @@ void NodeAdded(MObject& node, void* clientData)
 			cout << node.apiTypeStr() << endl;
 			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MaterialChanged, NULL, &status));
 			break;
+		
 	}
 
 	if (!found)
@@ -227,7 +268,7 @@ void NodeRemoved(MObject& node, void* clientData)
 		return;
 
 	cout << "\n============================= NODE REMOVED =============================" << endl;
-	cout << "ADDED NODE: " << MFnDependencyNode(node).name() << endl;
+	cout << "REMOVED NODE: " << MFnDependencyNode(node).name() << endl;
 }
 
 //TIMER
@@ -272,7 +313,7 @@ EXPORT MStatus initializePlugin(MObject obj)
 	if (status != MS::kSuccess)
 		return status;
 
-	callbackIdArray.append(MTimerMessage::addTimerCallback(0.0, TimerCallback, NULL, &status));
+	callbackIdArray.append(MTimerMessage::addTimerCallback(0.001f, TimerCallback, NULL, &status));
 	if (status != MS::kSuccess)
 		return status;
 
