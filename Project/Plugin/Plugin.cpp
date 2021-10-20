@@ -45,6 +45,11 @@ bool SendMessage(Message* message)
 
 			break;
 		}
+
+		case NODETYPE::CAMERA:
+		{
+
+		}
 	}
 
 	return sent;
@@ -182,6 +187,11 @@ void NodeAdded(MObject& node, void* clientData)
 			cout << node.apiTypeStr() << endl;
 			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MaterialChanged, NULL, &status));
 			break;
+
+		case MFn::Type::kCamera:
+			found = true;
+			//callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, CameraChanged, NULL, &status));
+			break;
 	}
 
 	if (!found)
@@ -257,10 +267,22 @@ EXPORT MStatus initializePlugin(MObject obj)
 
 	cout << "============================= >>>> PLUGIN LOADED <<<< =============================" << endl;
 
-	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel1", CameraChanged);
-	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel2", CameraChanged);
-	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel3", CameraChanged);
-	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel4", CameraChanged);
+
+	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel1", CameraChanged, &status));
+	if (status != MS::kSuccess)
+		return status;
+
+	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel2", CameraChanged, &status));
+	if (status != MS::kSuccess)
+		return status;
+
+	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel3", CameraChanged, &status));
+	if (status != MS::kSuccess)
+		return status;
+
+	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel4", CameraChanged, &status));
+	if (status != MS::kSuccess)
+		return status;
 
 	callbackIdArray.append(MDGMessage::addNodeAddedCallback(NodeAdded, "dependNode", NULL, &status));
 	if (status != MS::kSuccess)
