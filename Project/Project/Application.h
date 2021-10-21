@@ -91,6 +91,27 @@ public:
 
 						break;
 					}
+					case NODETYPE::CAMERA:
+					{
+
+						if (msg->messageType == MESSAGETYPE::CHANGED)
+						{
+							CameraChangedMessage message = CameraChangedMessage(data);
+							std::cout << "Name: " << message.name << std::endl;
+							std::cout << "Messagelenth: " << message.messageSize << std::endl;
+							std::cout << "MessageType: " << (UINT)message.messageType << std::endl;
+							std::cout << "OrthoWidth: " << message.orthoWidth << std::endl;
+							for (UINT i = 0; i < 16; i++)
+							{
+								std::cout << "Matrix: " << message.matrix[i] << std::endl;
+							}
+							
+
+							//renderer->UpdateCameraMatrix();
+						}
+						break;
+					}
+
 				}
 
 				if (msg)

@@ -48,7 +48,17 @@ bool SendMessage(Message* message)
 
 		case NODETYPE::CAMERA:
 		{
-
+			if (message->messageType == MESSAGETYPE::CHANGED)
+			{
+				auto cameraChanged = static_cast<CameraChangedMessage*>(message);
+				cout << "---TRYING TO SEND CAMERA CHANGED MESSAGE---" << endl;
+				cout << cameraChanged->Size() << " " << cameraChanged->name << endl;
+				data = cameraChanged->Data();
+				sent = memory.Send(data, cameraChanged->Size());
+				if (sent)
+					cout << "---SENT CAMERA CHANGED MESSAGE---" << endl;
+				delete data;
+			}
 		}
 	}
 
@@ -89,7 +99,7 @@ void CameraChanged(const MString& str, void* clientData)
 
 	if (strcmp(str.asChar(), activePanel.asChar()) == 0)
 	{
-		M3dView currentView = M3dView();
+		M3dView currentView = M3dView::active3dView();
 		MMatrix viewMatrix, perspectiveMatrix;
 
 		currentView.updateViewingParameters();
@@ -97,7 +107,22 @@ void CameraChanged(const MString& str, void* clientData)
 		currentView.modelViewMatrix(viewMatrix);
 		currentView.projectionMatrix(perspectiveMatrix);
 
+		MDagPath cameraPath;
+
+		currentView.getCamera(cameraPath);
+		MFnCamera camera(cameraPath);
+		//cout << camera.absoluteName() << endl;
+		//cout << "CAMERA: " << endl << "Far clipping plane: " << camera.farClippingPlane()
+		//	 << endl << "Near clipping plane: " << camera.nearClippingPlane() << endl
+		//	 << "Horizontal FOV: " << camera.horizontalFieldOfView() << endl
+		//	 << "Vertical FOV: " << camera.verticalFieldOfView() << endl;
+
+		//cout << "Camera Ortho Width: " << camera.orthoWidth() << endl;
+		
 		MMatrix matrix = viewMatrix * perspectiveMatrix;
+
+		double orthoWidth = camera.orthoWidth();
+
 		float matrixArr[16] = {};
 
 		UINT index = 0;
@@ -105,12 +130,17 @@ void CameraChanged(const MString& str, void* clientData)
 		{
 			for (UINT j = 0; j < 4; j++)
 			{
+
+
 				matrixArr[index] = matrix.matrix[i][j];
+				//cout << matrix.matrix[i][j] << endl;
+
 				index++;
 			}
 		}
 
-		Message* message = new CameraChangedMessage(activePanel.numChars(), (char*)activePanel.asChar(), matrixArr);
+
+		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), matrixArr, orthoWidth);
 		messages.push(message);
 	}
 }

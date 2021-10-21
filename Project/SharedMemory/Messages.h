@@ -102,10 +102,13 @@ struct Message
 struct CameraChangedMessage : public Message
 {
 	float matrix[16];
+	double orthoWidth;
 
-	CameraChangedMessage(size_t nameLength, char* name, float matrix[])
+	CameraChangedMessage(size_t nameLength, char* name, float matrix[], double orthoWidth)
 		:Message(NODETYPE::CAMERA, MESSAGETYPE::CHANGED, nameLength, name)
 	{
+		this->orthoWidth = orthoWidth;
+
 		for (UINT i = 0; i < 16; ++i)
 			this->matrix[i] = matrix[i];
 	}
@@ -131,6 +134,9 @@ struct CameraChangedMessage : public Message
 		location += nameLength;
 
 		memcpy(matrix, data + location, sizeof(float) * 16);
+		location += sizeof(float) * 16;
+
+		memcpy(&orthoWidth, data + location, sizeof(double));
 	}
 
 	virtual void* Data() override
@@ -154,11 +160,14 @@ struct CameraChangedMessage : public Message
 		location += nameLength;
 
 		memcpy(data + location, matrix, sizeof(float) * 16);
+		location += sizeof(float) * 16;
+
+		memcpy(data + location, &orthoWidth, sizeof(double));
 
 		return data;
 	}
 
-	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + sizeof(float) * 16; return messageSize; }
+	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + sizeof(float) * 16 + sizeof(double); return messageSize; }
 };
 
 struct MeshChangedMessage : public Message
