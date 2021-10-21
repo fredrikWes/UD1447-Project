@@ -31,7 +31,7 @@ public:
 
 	void Run()
 	{
-		Matrix viewMatrix = Matrix::CreateLookAt({ -10.0f, 0.0f, -10.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
+		Matrix viewMatrix = Matrix::CreateLookAt({ 10.0f, 0.0f, 10.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
 		Matrix perspectiveMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
 
 		renderer->UpdateCameraMatrix((viewMatrix * perspectiveMatrix).Transpose());

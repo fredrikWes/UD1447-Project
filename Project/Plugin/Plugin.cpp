@@ -144,12 +144,13 @@ void MeshChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPl
 
 	if (msg & MNodeMessage::AttributeMessage::kAttributeEval && plugInfo.find(".outMesh") != std::string::npos)
 	{
-		cout << "\n============================= GEOMETRY CHANGED =============================" << endl;
-
+		std::vector<int> indices;
 		std::vector<Vertex> vertices;
-		ProcessMesh(mesh, vertices);
+		if (!ProcessMesh(mesh, indices, vertices))
+			return;
 
-		MeshChangedMessage* message = new MeshChangedMessage(NODETYPE::MESH, MESSAGETYPE::CHANGED, MFnDependencyNode(node, &status).name().numChars(), (char*)MFnDependencyNode(node, &status).name().asChar(), vertices.data(), vertices.size());
+		cout << "\n============================= GEOMETRY CHANGED =============================" << endl;
+		MeshChangedMessage* message = new MeshChangedMessage(NODETYPE::MESH, MESSAGETYPE::CHANGED, MFnDependencyNode(node, &status).name().numChars(), (char*)MFnDependencyNode(node, &status).name().asChar(), indices.data(), indices.size(), vertices.data(), vertices.size(), vertexCache[nodeName].size());
 		messages.push(message);
 	}
 }

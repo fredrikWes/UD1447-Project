@@ -8,10 +8,14 @@ Mesh::Mesh(const Message& message)
 
 void Mesh::Update(const MeshChangedMessage& message)
 {
-	vertexCount = message.numVertices;
+	vertexCount = message.vertexCount;
+	vertices.resize(vertexCount, Vertex());
 
-	//for (UINT i = 0; i < vertexCount; ++i)
-	//	vertices.emplace_back(message.vertices[i]);
+	for (UINT i = 0; i < message.numIndices; ++i)
+		vertices[message.indices[i]] = message.vertices[i];
+
+	for (UINT i = 0; i < vertexCount; ++i)
+		std::cout << vertices[i].Pz;
 
 	if (vertexBuffer)
 		vertexBuffer->Release();
