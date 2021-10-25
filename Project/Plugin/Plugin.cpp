@@ -111,15 +111,7 @@ void CameraChanged(const MString& str, void* clientData)
 
 		currentView.getCamera(cameraPath);
 		MFnCamera camera(cameraPath);
-	
-		//cout << camera.absoluteName() << endl;
-		//cout << "CAMERA: " << endl << "Far clipping plane: " << camera.farClippingPlane()
-		//	 << endl << "Near clipping plane: " << camera.nearClippingPlane() << endl
-		//	 << "Horizontal FOV: " << camera.horizontalFieldOfView() << endl
-		//	 << "Vertical FOV: " << camera.verticalFieldOfView() << endl;
-
-		//cout << "Camera Ortho Width: " << camera.orthoWidth() << endl;
-		
+			
 		MMatrix vMatrix = viewMatrix;
 		MMatrix pMatrix = perspectiveMatrix;
 
@@ -128,30 +120,73 @@ void CameraChanged(const MString& str, void* clientData)
 		float viewMatrixArr[16] = {};
 		float perspMatrixArr[16] = {};
 
-		UINT index = 0;
-		for (UINT i = 0; i < 4; ++i)
-		{
-			for (UINT j = 0; j < 4; j++)
-			{
-				viewMatrixArr[index] = vMatrix.matrix[j][i];
-				cout << vMatrix.matrix[j][i] << endl;
+		viewMatrixArr[0] = viewMatrix[0][0];
+		viewMatrixArr[1] = viewMatrix[1][0];
+		viewMatrixArr[2] = viewMatrix[2][0];
+		viewMatrixArr[3] = viewMatrix[3][0];
 
-				index++;
-			}
-		}
+		viewMatrixArr[4] = viewMatrix[0][1];
+		viewMatrixArr[5] = viewMatrix[1][1];
+		viewMatrixArr[6] = viewMatrix[2][1];
+		viewMatrixArr[7] = viewMatrix[3][1];
 
-		index = 0;
-		for (UINT k = 0; k < 4; ++k)
-		{
-			for (UINT l = 0; l < 4; l++)
-			{
-				perspMatrixArr[index] = pMatrix.matrix[k][l];
-				cout << pMatrix.matrix[k][l] << endl;
+		viewMatrixArr[8] = viewMatrix[0][2];
+		viewMatrixArr[9] = viewMatrix[1][2];
+		viewMatrixArr[10] = viewMatrix[2][2];
+		viewMatrixArr[11] = viewMatrix[3][2];
 
-				index++;
-			}
-		}
-		index = 0;
+		viewMatrixArr[12] = viewMatrix[0][3];
+		viewMatrixArr[13] = viewMatrix[1][3];
+		viewMatrixArr[14] = viewMatrix[2][3];
+		viewMatrixArr[15] = viewMatrix[3][3];
+
+		
+		perspMatrixArr[0] = perspectiveMatrix[0][0];
+		perspMatrixArr[1] = perspectiveMatrix[1][0];
+		perspMatrixArr[2] = perspectiveMatrix[2][0];
+		perspMatrixArr[3] = perspectiveMatrix[3][0];
+
+		perspMatrixArr[4] = perspectiveMatrix[0][1];
+		perspMatrixArr[5] = perspectiveMatrix[1][1];
+		perspMatrixArr[6] = perspectiveMatrix[2][1];
+		perspMatrixArr[7] = perspectiveMatrix[3][1];
+
+		perspMatrixArr[8] = perspectiveMatrix[0][2];
+		perspMatrixArr[9] = perspectiveMatrix[1][2];
+		perspMatrixArr[10] = perspectiveMatrix[2][2];
+		perspMatrixArr[11] = perspectiveMatrix[3][2];
+
+		perspMatrixArr[12] = perspectiveMatrix[0][3];
+		perspMatrixArr[13] = perspectiveMatrix[1][3];
+		perspMatrixArr[14] = perspectiveMatrix[2][3];
+		perspMatrixArr[15] = perspectiveMatrix[3][3];
+
+
+
+		//UINT index = 0;
+		//for (UINT i = 0; i < 4; ++i)
+		//{
+		//	for (UINT j = 0; j < 4; j++)
+		//	{
+		//		viewMatrixArr[index] = vMatrix.matrix[j][i];
+		//		cout << vMatrix.matrix[j][i] << endl;
+
+		//		index++;
+		//	}
+		//}
+
+		//index = 0;
+		//for (UINT k = 0; k < 4; ++k)
+		//{
+		//	for (UINT l = 0; l < 4; l++)
+		//	{
+		//		perspMatrixArr[index] = pMatrix.matrix[k][l];
+		//		cout << pMatrix.matrix[k][l] << endl;
+
+		//		index++;
+		//	}
+		//}
+		//dex = 0;
 
 		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), viewMatrixArr, perspMatrixArr, orthoWidth, camera.isOrtho());
 		messages.push(message);

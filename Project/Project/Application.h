@@ -122,13 +122,15 @@ public:
 							}
 							else
 							{
-								//perspectiveMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
+								perspectiveMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
 							}
 								
 
-							renderer->UpdateCameraMatrix((viewMatrix * perspectiveMatrix).Transpose());
+							Matrix finalMatrix = Matrix((viewMatrix * perspectiveMatrix).Transpose());
 
-							//std::cout << "NEW MATRIX: " << (viewMatrix * perspectiveMatrix).Transpose()) << endl;
+							renderer->UpdateCameraMatrix(finalMatrix);
+
+							
 							
 						}
 						break;
