@@ -45,7 +45,7 @@ public:
 				DispatchMessage(&msg);
 			}
 
-			if (GetAsyncKeyState(VK_RETURN))
+			if (GetAsyncKeyState(VK_ESCAPE))
 				break;
 
 			//RENDERING	
@@ -104,11 +104,17 @@ public:
 							std::cout << "Orthographic: " << message.orthographic << std::endl;
 							for (UINT i = 0; i < 16; i++)
 							{
-								std::cout << "Matrix: " << message.viewMatrix[i] << std::endl;
+								std::cout << "View Matrix: " << message.viewMatrix[i] << std::endl;
+							}
+
+							for (UINT i = 0; i < 16; i++)
+							{
+								std::cout << "Perpective Matrix: " << message.perspectiveMatrix[i] << std::endl;
 							}
 
 							Matrix viewMatrix, perspectiveMatrix;
-							viewMatrix =Matrix(message.viewMatrix);
+							viewMatrix = Matrix(message.viewMatrix);
+							perspectiveMatrix = Matrix(message.perspectiveMatrix);
 
 							if (message.orthographic)
 							{
@@ -116,7 +122,7 @@ public:
 							}
 							else
 							{
-								perspectiveMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
+								//perspectiveMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
 							}
 								
 

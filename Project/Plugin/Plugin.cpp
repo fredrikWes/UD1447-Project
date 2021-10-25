@@ -120,29 +120,40 @@ void CameraChanged(const MString& str, void* clientData)
 
 		//cout << "Camera Ortho Width: " << camera.orthoWidth() << endl;
 		
-		MMatrix matrix = viewMatrix;
+		MMatrix vMatrix = viewMatrix;
+		MMatrix pMatrix = perspectiveMatrix;
 
 		double orthoWidth = camera.orthoWidth();
 
-		float matrixArr[16] = {};
+		float viewMatrixArr[16] = {};
+		float perspMatrixArr[16] = {};
 
 		UINT index = 0;
 		for (UINT i = 0; i < 4; ++i)
 		{
 			for (UINT j = 0; j < 4; j++)
 			{
-
-
-				matrixArr[index] = matrix.matrix[i][j];
-				cout << matrix.matrix[i][j] << endl;
+				viewMatrixArr[index] = vMatrix.matrix[j][i];
+				cout << vMatrix.matrix[j][i] << endl;
 
 				index++;
 			}
 		}
 
+		index = 0;
+		for (UINT k = 0; k < 4; ++k)
+		{
+			for (UINT l = 0; l < 4; l++)
+			{
+				perspMatrixArr[index] = pMatrix.matrix[k][l];
+				cout << pMatrix.matrix[k][l] << endl;
 
+				index++;
+			}
+		}
+		index = 0;
 
-		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), matrixArr, orthoWidth, camera.isOrtho());
+		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), viewMatrixArr, perspMatrixArr, orthoWidth, camera.isOrtho());
 		messages.push(message);
 	}
 }
