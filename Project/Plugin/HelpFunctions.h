@@ -19,7 +19,7 @@ inline Vertex ProcessVertex(MFnMesh& mesh, UINT polygonID, UINT vertexID, MIntAr
 
 	Vertex vertex
 	{
-		position.z, position.y, position.x,
+		position.x, position.y, position.z,
 		normal.x, normal.y, normal.z,
 		u, 1 - v
 	};

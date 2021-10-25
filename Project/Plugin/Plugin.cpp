@@ -120,7 +120,7 @@ void CameraChanged(const MString& str, void* clientData)
 		float viewMatrixArr[16] = {};
 		float perspMatrixArr[16] = {};
 
-		viewMatrixArr[0] = viewMatrix[0][0];
+		/*viewMatrixArr[0] = viewMatrix[0][0];
 		viewMatrixArr[1] = viewMatrix[1][0];
 		viewMatrixArr[2] = viewMatrix[2][0];
 		viewMatrixArr[3] = viewMatrix[3][0];
@@ -159,34 +159,34 @@ void CameraChanged(const MString& str, void* clientData)
 		perspMatrixArr[12] = perspectiveMatrix[0][3];
 		perspMatrixArr[13] = perspectiveMatrix[1][3];
 		perspMatrixArr[14] = perspectiveMatrix[2][3];
-		perspMatrixArr[15] = perspectiveMatrix[3][3];
+		perspMatrixArr[15] = perspectiveMatrix[3][3];*/
 
 
 
-		//UINT index = 0;
-		//for (UINT i = 0; i < 4; ++i)
-		//{
-		//	for (UINT j = 0; j < 4; j++)
-		//	{
-		//		viewMatrixArr[index] = vMatrix.matrix[j][i];
-		//		cout << vMatrix.matrix[j][i] << endl;
+		UINT index = 0;
+		for (UINT i = 0; i < 4; ++i)
+		{
+			for (UINT j = 0; j < 4; j++)
+			{
+				viewMatrixArr[index] = vMatrix.matrix[i][j];
+				cout << vMatrix.matrix[i][j] << endl;
 
-		//		index++;
-		//	}
-		//}
+				index++;
+			}
+		}
 
-		//index = 0;
-		//for (UINT k = 0; k < 4; ++k)
-		//{
-		//	for (UINT l = 0; l < 4; l++)
-		//	{
-		//		perspMatrixArr[index] = pMatrix.matrix[k][l];
-		//		cout << pMatrix.matrix[k][l] << endl;
+		index = 0;
+		for (UINT k = 0; k < 4; ++k)
+		{
+			for (UINT l = 0; l < 4; l++)
+			{
+				perspMatrixArr[index] = pMatrix.matrix[k][l];
+				cout << pMatrix.matrix[k][l] << endl;
 
-		//		index++;
-		//	}
-		//}
-		//dex = 0;
+				index++;
+			}
+		}
+		index = 0;
 
 		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), viewMatrixArr, perspMatrixArr, orthoWidth, camera.isOrtho());
 		messages.push(message);
