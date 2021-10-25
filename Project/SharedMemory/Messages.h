@@ -180,17 +180,25 @@ struct CameraChangedMessage : public Message
 
 struct MeshChangedMessage : public Message
 {
+	int vertexCount;
+
+	int numIndices;
+	int* indices;
+
 	int numVertices;
 	Vertex* vertices;
 
-	MeshChangedMessage(NODETYPE nodeType, MESSAGETYPE messageType, size_t nameLength, char* name, Vertex* vertices, int numVertices)
-		:Message(nodeType, messageType, nameLength, name), numVertices(numVertices)
+	MeshChangedMessage(NODETYPE nodeType, MESSAGETYPE messageType, size_t nameLength, char* name, int* indices, int numIndices, Vertex* vertices, int numVertices, int vertexCount)
+		:Message(nodeType, messageType, nameLength, name), numIndices(numIndices), numVertices(numVertices), vertexCount(vertexCount)
 	{
 		this->vertices = new Vertex[numVertices];
 		memcpy(this->vertices, vertices, sizeof(Vertex) * numVertices);
+
+		this->indices = new int[numIndices];
+		memcpy(this->indices, indices, sizeof(int) * numIndices);
 	}
 
-	~MeshChangedMessage() { delete vertices; }
+	~MeshChangedMessage() { delete vertices; delete indices; }
 
 	MeshChangedMessage(char* data)
 	{
@@ -211,6 +219,16 @@ struct MeshChangedMessage : public Message
 		name = new char[nameLength];
 		strcpy_s(name, nameLength, data + location);
 		location += nameLength;
+
+		memcpy(&vertexCount, data + location, sizeof(int));
+		location += sizeof(int);
+
+		memcpy(&numIndices, data + location, sizeof(int));
+		location += sizeof(int);
+
+		indices = new int[numIndices];
+		memcpy(indices, data + location, sizeof(int) * numIndices);
+		location += sizeof(int) * numIndices;
 
 		memcpy(&numVertices, data + location, sizeof(int));
 		location += sizeof(int);
@@ -240,6 +258,15 @@ struct MeshChangedMessage : public Message
 		memcpy(data + location, name, nameLength);
 		location += nameLength;
 
+		memcpy(data + location, &vertexCount, sizeof(int));
+		location += sizeof(int);
+
+		memcpy(data + location, &numIndices, sizeof(int));
+		location += sizeof(int);
+
+		memcpy(data + location, indices, sizeof(int) * numIndices);
+		location += sizeof(int) * numIndices;
+
 		memcpy(data + location, &numVertices, sizeof(int));
 		location += sizeof(int);
 
@@ -249,5 +276,5 @@ struct MeshChangedMessage : public Message
 		return data;
 	}
 
-	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + sizeof(int) + sizeof(Vertex) * numVertices; return messageSize; }
+	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + sizeof(int) * 3 + sizeof(int) * numIndices + sizeof(Vertex) * numVertices; return messageSize; }
 };

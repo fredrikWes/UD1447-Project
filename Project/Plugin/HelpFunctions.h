@@ -41,13 +41,18 @@ inline void ProcessQuad(MFnMesh& mesh, UINT polygonID, MIntArray vertexList, UIN
 		vertices.emplace_back(ProcessVertex(mesh, polygonID, ID, vertexList));
 }
 
-inline void ProcessMesh(MFnMesh& mesh, std::vector<Vertex>& vertices)
+inline bool ProcessMesh(MFnMesh& mesh, std::vector<int>& indices, std::vector<Vertex>& vertices)
 {
+	MStatus status;
+	const char* meshName = mesh.name().asChar();
+
 	for (UINT i = 0; i < mesh.numPolygons(); ++i)
 	{
 		MIntArray vertexList;
 
-		mesh.getPolygonVertices(i, vertexList);
+		status = mesh.getPolygonVertices(i, vertexList);
+		if (status != MS::kSuccess)
+			return false;
 
 		UINT numVertices = vertexList.length();
 
@@ -61,27 +66,50 @@ inline void ProcessMesh(MFnMesh& mesh, std::vector<Vertex>& vertices)
 			cout << ">>N-GONS NOT SUPPORTED<<\n";
 	}
 
-	if (vertexCache.find(mesh.name().asChar()) == vertexCache.end())
-	{
-		vertexCache[mesh.name().asChar()] = vertices;
-		return;
-	}
-		
-	auto& oldVertices = vertexCache.at(mesh.name().asChar());
+	if (vertices.empty())
+		return false;
 
+	//FIRST INITIALIZE OF MESH
+	if (vertexCache.find(meshName) == vertexCache.end())
+	{
+		cout << "INIT MESH" << endl;
+		vertexCache[meshName] = vertices;
+		for (UINT i = 0; i < vertices.size(); ++i)
+			indices.emplace_back(i);
+		return true;
+	}
+	
+	//MESH HAS BEEN INITIALIZED AND THEN CHANGED
+	auto& oldVertices = vertexCache.at(meshName);
+	vertexCache[meshName] = vertices;
+
+	//SEND ONLY THE CHANGED VERTICES AND THE INDICES
+	std::vector<int> indicesToRemove;
 	for (UINT i = 0; i < vertices.size(); ++i)
 	{
 		if (i < oldVertices.size())
 		{
 			if (vertices[i] == oldVertices[i])
 			{
-				vertices.erase(vertices.begin() + i);
-				--i;
+				cout << "VERTEX INDEX " << i << " WAS THE SAME" << endl;
+				indicesToRemove.emplace_back(i);
 			}
+
+			else
+			{
+				cout << "CHANGED VERTEX INDEX: " << i << endl;
+				indices.emplace_back(i);
+			}
+		}
+
+		else
+		{
+			cout << "CHANGED VERTEX INDEX: " << i << endl;
+			indices.emplace_back(i);
 		}
 	}
 
-	std::cout << "SENT " << vertices.size() << std::endl;
+	cout << "CHANGED " << indices.size() << " VERTICES";
 
-	vertexCache[mesh.name().asChar()] = vertices;
+	return true;
 }

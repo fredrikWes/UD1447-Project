@@ -16,7 +16,7 @@ struct Mesh : public Node
 	Matrix matrix = Matrix::Identity;
 
 	UINT vertexCount = 0;
-	//std::vector<Vertex> vertices;
+	std::vector<Vertex> vertices;
 	ID3D11Buffer* vertexBuffer = nullptr;
 	static const UINT stride = sizeof(Vertex);
 	static const UINT offset = 0;
