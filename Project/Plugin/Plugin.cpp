@@ -45,6 +45,21 @@ bool SendMessage(Message* message)
 
 			break;
 		}
+
+		case NODETYPE::CAMERA:
+		{
+			if (message->messageType == MESSAGETYPE::CHANGED)
+			{
+				auto cameraChanged = static_cast<CameraChangedMessage*>(message);
+				cout << "---TRYING TO SEND CAMERA CHANGED MESSAGE---" << endl;
+				cout << cameraChanged->Size() << " " << cameraChanged->name << endl;
+				data = cameraChanged->Data();
+				sent = memory.Send(data, cameraChanged->Size());
+				if (sent)
+					cout << "---SENT CAMERA CHANGED MESSAGE---" << endl;
+				delete data;
+			}
+		}
 	}
 
 	return sent;
@@ -84,7 +99,7 @@ void CameraChanged(const MString& str, void* clientData)
 
 	if (strcmp(str.asChar(), activePanel.asChar()) == 0)
 	{
-		M3dView currentView = M3dView();
+		M3dView currentView = M3dView::active3dView();
 		MMatrix viewMatrix, perspectiveMatrix;
 
 		currentView.updateViewingParameters();
@@ -92,7 +107,23 @@ void CameraChanged(const MString& str, void* clientData)
 		currentView.modelViewMatrix(viewMatrix);
 		currentView.projectionMatrix(perspectiveMatrix);
 
-		MMatrix matrix = viewMatrix * perspectiveMatrix;
+		MDagPath cameraPath;
+
+		currentView.getCamera(cameraPath);
+		MFnCamera camera(cameraPath);
+	
+		//cout << camera.absoluteName() << endl;
+		//cout << "CAMERA: " << endl << "Far clipping plane: " << camera.farClippingPlane()
+		//	 << endl << "Near clipping plane: " << camera.nearClippingPlane() << endl
+		//	 << "Horizontal FOV: " << camera.horizontalFieldOfView() << endl
+		//	 << "Vertical FOV: " << camera.verticalFieldOfView() << endl;
+
+		//cout << "Camera Ortho Width: " << camera.orthoWidth() << endl;
+		
+		MMatrix matrix = viewMatrix;
+
+		double orthoWidth = camera.orthoWidth();
+
 		float matrixArr[16] = {};
 
 		UINT index = 0;
@@ -100,12 +131,17 @@ void CameraChanged(const MString& str, void* clientData)
 		{
 			for (UINT j = 0; j < 4; j++)
 			{
+
+
 				matrixArr[index] = matrix.matrix[i][j];
+				//cout << matrix.matrix[i][j] << endl;
+
 				index++;
 			}
 		}
 
-		Message* message = new CameraChangedMessage(activePanel.numChars(), (char*)activePanel.asChar(), matrixArr);
+
+		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), matrixArr, orthoWidth, camera.isOrtho());
 		messages.push(message);
 	}
 }
@@ -183,6 +219,11 @@ void NodeAdded(MObject& node, void* clientData)
 			cout << node.apiTypeStr() << endl;
 			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MaterialChanged, NULL, &status));
 			break;
+
+		case MFn::Type::kCamera:
+			found = true;
+			//callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, CameraChanged, NULL, &status));
+			break;
 	}
 
 	if (!found)
@@ -255,6 +296,23 @@ EXPORT MStatus initializePlugin(MObject obj)
 	std::cerr.set_rdbuf(MStreamUtils::stdErrorStream().rdbuf());
 
 	cout << "============================= >>>> PLUGIN LOADED <<<< =============================" << endl;
+
+
+	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel1", CameraChanged, &status));
+	if (status != MS::kSuccess)
+		return status;
+
+	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel2", CameraChanged, &status));
+	if (status != MS::kSuccess)
+		return status;
+
+	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel3", CameraChanged, &status));
+	if (status != MS::kSuccess)
+		return status;
+
+	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel4", CameraChanged, &status));
+	if (status != MS::kSuccess)
+		return status;
 
 	callbackIdArray.append(MDGMessage::addNodeAddedCallback(NodeAdded, "dependNode", NULL, &status));
 	if (status != MS::kSuccess)
