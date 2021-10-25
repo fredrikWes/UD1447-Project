@@ -12,10 +12,11 @@ void Mesh::Update(const MeshChangedMessage& message)
 	vertices.resize(vertexCount, Vertex());
 
 	for (UINT i = 0; i < message.numIndices; ++i)
+	{
+		std::cout << "CHANGED VERTEX: " << message.indices[i] << std::endl;
 		vertices[message.indices[i]] = message.vertices[i];
-
-	for (UINT i = 0; i < vertexCount; ++i)
-		std::cout << vertices[i].Pz;
+	}
+		
 
 	if (vertexBuffer)
 		vertexBuffer->Release();

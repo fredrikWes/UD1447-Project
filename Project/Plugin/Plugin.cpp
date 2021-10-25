@@ -207,7 +207,6 @@ void NodeRemoved(MObject& node, void* clientData)
 	case MFn::Type::kMesh:
 		found = true;
 		messages.push(new Message(NODETYPE::MESH, MESSAGETYPE::REMOVED, nodeName.numChars(), (char*)nodeName.asChar()));
-		callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MeshChanged, NULL, &status));
 		break;
 
 	case MFn::Type::kTransform:
@@ -218,7 +217,6 @@ void NodeRemoved(MObject& node, void* clientData)
 	case MFn::Type::kPhong: //ONLY ACCEPTS PHONG AS MATERIAL
 		found = true;
 		cout << node.apiTypeStr() << endl;
-		callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MaterialChanged, NULL, &status));
 		break;
 	}
 
@@ -226,7 +224,7 @@ void NodeRemoved(MObject& node, void* clientData)
 		return;
 
 	cout << "\n============================= NODE REMOVED =============================" << endl;
-	cout << "ADDED NODE: " << MFnDependencyNode(node).name() << endl;
+	cout << "REMOVED NODE: " << MFnDependencyNode(node).name() << endl;
 }
 
 //TIMER
@@ -257,11 +255,6 @@ EXPORT MStatus initializePlugin(MObject obj)
 	std::cerr.set_rdbuf(MStreamUtils::stdErrorStream().rdbuf());
 
 	cout << "============================= >>>> PLUGIN LOADED <<<< =============================" << endl;
-
-	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel1", CameraChanged);
-	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel2", CameraChanged);
-	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel3", CameraChanged);
-	//MUiMessage::add3dViewPreRenderMsgCallback("modelPanel4", CameraChanged);
 
 	callbackIdArray.append(MDGMessage::addNodeAddedCallback(NodeAdded, "dependNode", NULL, &status));
 	if (status != MS::kSuccess)

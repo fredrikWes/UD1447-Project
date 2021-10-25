@@ -80,25 +80,47 @@ inline bool ProcessMesh(MFnMesh& mesh, std::vector<int>& indices, std::vector<Ve
 	}
 	
 	//MESH HAS BEEN INITIALIZED AND THEN CHANGED
-	auto& oldVertices = vertexCache.at(meshName);
+	auto oldVertices = vertexCache.at(meshName);
 	vertexCache[meshName] = vertices;
 
 	//SEND ONLY THE CHANGED VERTICES AND THE INDICES
-	std::vector<int> indicesToRemove;
+
+	cout << "OLD SIZE: " << oldVertices.size() << endl;
+	cout << "NEW SIZE: " << vertices.size() << endl;
+
+	for (UINT i = vertices.size(); i > 0; --i)
+	{
+		UINT index = i - 1;
+		cout << "VERTEX: " << index << endl;
+
+		if (i > oldVertices.size())
+			indices.emplace_back(index);
+		else
+		{
+			if (vertices[index] == oldVertices[index])
+				vertices.erase(vertices.begin() + index);
+			else
+				indices.emplace_back(index);
+		}
+	}
+
+	/*
 	for (UINT i = 0; i < vertices.size(); ++i)
 	{
-		if (i < oldVertices.size())
+		if (currentIndex < oldVertices.size())
 		{
-			if (vertices[i] == oldVertices[i])
+			if (vertices[i] == oldVertices[currentIndex])
 			{
-				cout << "VERTEX INDEX " << i << " WAS THE SAME" << endl;
-				indicesToRemove.emplace_back(i);
+				cout << "VERTEX INDEX " << currentIndex << " WAS THE SAME AS NEW " << i << endl;
+				vertices.erase(vertices.begin() + i);
+				++currentIndex;
+				--i;
 			}
 
 			else
 			{
-				cout << "CHANGED VERTEX INDEX: " << i << endl;
-				indices.emplace_back(i);
+				cout << "CHANGED VERTEX INDEX: " << currentIndex << endl;
+				indices.emplace_back(currentIndex);
 			}
 		}
 
@@ -108,6 +130,10 @@ inline bool ProcessMesh(MFnMesh& mesh, std::vector<int>& indices, std::vector<Ve
 			indices.emplace_back(i);
 		}
 	}
+	*/
+
+	if (indices.empty())
+		return false;
 
 	cout << "CHANGED " << indices.size() << " VERTICES";
 
