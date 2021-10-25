@@ -21,6 +21,11 @@ public:
 		Graphics::Initialize(window.ClientWidth(), window.ClientHeight(), window.GetHWND());
 
 		renderer = std::make_unique<Renderer>();
+
+		Matrix viewMatrix = Matrix::CreateLookAt({ 10.0f, 0.0f, 10.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
+		Matrix perspectiveMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
+
+		renderer->UpdateCameraMatrix((viewMatrix * perspectiveMatrix).Transpose());
 	}
 
 	~Application()
@@ -31,11 +36,6 @@ public:
 
 	void Run()
 	{
-		Matrix viewMatrix = Matrix::CreateLookAt({ 10.0f, 0.0f, 10.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
-		Matrix perspectiveMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
-
-		renderer->UpdateCameraMatrix((viewMatrix * perspectiveMatrix).Transpose());
-
 		while (!window.Exit())
 		{
 			MSG msg = {};
@@ -79,8 +79,14 @@ public:
 						if (msg->messageType == MESSAGETYPE::CHANGED)
 						{
 							MeshChangedMessage message = MeshChangedMessage(data);
-							auto mesh = std::dynamic_pointer_cast<Mesh>(nodes[message.name]);
-							mesh->Update(message);
+							for (auto& [name, node] : nodes)
+							{
+								if (std::string(message.name).find(name))
+								{
+									std::dynamic_pointer_cast<Mesh>(nodes[name])->Update(message);
+									break;
+								}
+							}
 						}
 
 						if (msg->messageType == MESSAGETYPE::REMOVED)
@@ -91,41 +97,39 @@ public:
 
 						break;
 					}
+
+					case NODETYPE::TRANSFORM:
+					{
+						TransformChangedMessage message = TransformChangedMessage(data);
+
+						for (auto& [name, node] : nodes)
+						{
+							if (std::string(message.name).find(name))
+							{
+								std::dynamic_pointer_cast<Mesh>(nodes[message.name])->matrix = Matrix(message.matrix);
+								break;
+							}
+						}
+						break;
+					}
+
 					case NODETYPE::CAMERA:
 					{
-
 						if (msg->messageType == MESSAGETYPE::CHANGED)
 						{
 							CameraChangedMessage message = CameraChangedMessage(data);
-							std::cout << "Name: " << message.name << std::endl;
-							std::cout << "Messagelenth: " << message.messageSize << std::endl;
-							std::cout << "MessageType: " << (UINT)message.messageType << std::endl;
-							std::cout << "OrthoWidth: " << message.orthoWidth << std::endl;
-							std::cout << "Orthographic: " << message.orthographic << std::endl;
-							for (UINT i = 0; i < 16; i++)
-							{
-								std::cout << "Matrix: " << message.viewMatrix[i] << std::endl;
-							}
 
 							Matrix viewMatrix, perspectiveMatrix;
-							viewMatrix =Matrix(message.viewMatrix);
+
+							viewMatrix = Matrix(message.viewMatrix);
 
 							if (message.orthographic)
-							{
 								perspectiveMatrix = Matrix::CreateOrthographic(message.orthoWidth, message.orthoWidth, 0.1f, 100.0f);
-							}
 							else
-							{
-								perspectiveMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
-							}
+								perspectiveMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XM_PIDIV4, (float)window.ClientWidth() / (float)window.ClientHeight(), 0.1f, 100.0f);
 								
 
-							renderer->UpdateCameraMatrix((viewMatrix * perspectiveMatrix).Transpose());
-							
-							
-							
-
-							//renderer->UpdateCameraMatrix();
+							//renderer->UpdateCameraMatrix((viewMatrix * perspectiveMatrix).Transpose());
 						}
 						break;
 					}

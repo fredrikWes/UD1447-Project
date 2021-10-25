@@ -7,7 +7,6 @@
 struct Node
 {
 	std::string name = "";
-
 	virtual void Update() {}
 };
 

@@ -278,3 +278,65 @@ struct MeshChangedMessage : public Message
 
 	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + sizeof(int) * 3 + sizeof(int) * numIndices + sizeof(Vertex) * numVertices; return messageSize; }
 };
+
+struct TransformChangedMessage : public Message
+{
+	float matrix[16];
+
+	TransformChangedMessage(size_t nameLength, char* name, float matrix[16])
+		:Message(NODETYPE::TRANSFORM, MESSAGETYPE::CHANGED, nameLength, name)
+	{
+		for (UINT i = 0; i < 16; ++i)
+			this->matrix[i] = matrix[i];
+	}
+
+	TransformChangedMessage(char* data)
+	{
+		size_t location = 0;
+
+		memcpy(&messageSize, data + location, sizeof(size_t));
+		location += sizeof(size_t);
+
+		memcpy(&nodeType, data + location, sizeof(NODETYPE));
+		location += sizeof(NODETYPE);
+
+		memcpy(&messageType, data + location, sizeof(MESSAGETYPE));
+		location += sizeof(MESSAGETYPE);
+
+		memcpy(&nameLength, data + location, sizeof(size_t));
+		location += sizeof(size_t);
+
+		name = new char[nameLength];
+		strcpy_s(name, nameLength, data + location);
+		location += nameLength;
+
+		memcpy(matrix, data + location, sizeof(float) * 16);
+	}
+
+	virtual void* Data() override
+	{
+		size_t location = 0;
+		char* data = new char[Size()];
+
+		memcpy(data, &messageSize, sizeof(size_t));
+		location += sizeof(size_t);
+
+		memcpy(data + location, &nodeType, sizeof(NODETYPE));
+		location += sizeof(NODETYPE);
+
+		memcpy(data + location, &messageType, sizeof(MESSAGETYPE));
+		location += sizeof(MESSAGETYPE);
+
+		memcpy(data + location, &nameLength, sizeof(size_t));
+		location += sizeof(size_t);
+
+		memcpy(data + location, name, nameLength);
+		location += nameLength;
+
+		memcpy(data + location, matrix, sizeof(float) * 16);
+
+		return data;
+	}
+
+	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + sizeof(float) * 16; return messageSize; }
+};

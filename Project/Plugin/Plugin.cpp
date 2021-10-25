@@ -87,9 +87,42 @@ void MaterialChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &oth
 	}
 }
 
-void TransformChanged(/*ARGS*/)
+void NotifyTransformChanged(const MObject& node)
 {
+	MFnDagNode dagNode(node);
+	MDagPath dagPath;
 
+	status = dagNode.getPath(dagPath);
+	if (status != MS::kSuccess)
+		return;
+
+	float matrixArr[16] = { 0 };
+
+	MMatrix matrix = dagPath.inclusiveMatrix(&status);
+	if (status != MS::kSuccess)
+		return;
+
+	UINT index = 0;
+	for (UINT i = 0; i < 4; ++i)
+	{
+		for (UINT j = 0; j < 4; ++j)
+		{
+			matrixArr[index] = matrix[i][j];
+			index++;
+		}
+	}
+
+	Message* message = new TransformChangedMessage(dagNode.name().numChars(), (char*)dagNode.name().asChar(), matrixArr);
+	messages.push(message);
+
+	for (UINT i = 0; i < dagNode.childCount(); ++i)
+		NotifyTransformChanged(dagNode.child(i));
+}
+
+void TransformChanged(MObject& node, MDagMessage::MatrixModifiedFlags& modified, void* clientData)
+{
+	cout << "\n============================= TRANSFORM CHANGED =============================" << endl;
+	NotifyTransformChanged(node);
 }
 
 void CameraChanged(const MString& str, void* clientData)
@@ -140,7 +173,7 @@ void CameraChanged(const MString& str, void* clientData)
 			}
 		}
 
-
+		cout << "\n============================= CAMERA CHANGED =============================" << endl;
 		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), matrixArr, orthoWidth, camera.isOrtho());
 		messages.push(message);
 	}
@@ -199,20 +232,32 @@ void NodeAdded(MObject& node, void* clientData)
 
 	bool found = false;
 	MString nodeName = MFnDependencyNode(node).name();
-	cout << node.apiTypeStr() << endl;
+
+	MDagPath dagPath;
+	MFnDagNode(node).getPath(dagPath);
+	std::string path(dagPath.fullPathName().asChar());
+	auto it = path.find_first_of('|') + 1;
+	path = path.substr(it);
+	it = path.find_first_of('|');
+	path = path.substr(0, it);
+	nodeName = MString(path.c_str());
 
 	switch (node.apiType())
 	{
 		case MFn::Type::kMesh:
+		{
 			found = true;
 			messages.push(new Message(NODETYPE::MESH, MESSAGETYPE::ADDED, nodeName.numChars(), (char*)nodeName.asChar()));
 			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MeshChanged, NULL, &status));
 			break;
-
+		}
+			
 		case MFn::Type::kTransform:
+		{
 			found = true;
-			//ADD TRANSFORM ADDED MESSAGE
+			callbackIdArray.append(MDagMessage::addMatrixModifiedCallback(dagPath, TransformChanged, NULL, &status));
 			break;
+		}
 
 		case MFn::Type::kPhong: //ONLY ACCEPTS PHONG AS MATERIAL
 			found = true;
@@ -298,21 +343,21 @@ EXPORT MStatus initializePlugin(MObject obj)
 	cout << "============================= >>>> PLUGIN LOADED <<<< =============================" << endl;
 
 
-	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel1", CameraChanged, &status));
-	if (status != MS::kSuccess)
-		return status;
+	//callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel1", CameraChanged, &status));
+	//if (status != MS::kSuccess)
+	//	return status;
 
-	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel2", CameraChanged, &status));
-	if (status != MS::kSuccess)
-		return status;
+	//callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel2", CameraChanged, &status));
+	//if (status != MS::kSuccess)
+	//	return status;
 
-	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel3", CameraChanged, &status));
-	if (status != MS::kSuccess)
-		return status;
+	//callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel3", CameraChanged, &status));
+	//if (status != MS::kSuccess)
+	//	return status;
 
-	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel4", CameraChanged, &status));
-	if (status != MS::kSuccess)
-		return status;
+	//callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel4", CameraChanged, &status));
+	//if (status != MS::kSuccess)
+	//	return status;
 
 	callbackIdArray.append(MDGMessage::addNodeAddedCallback(NodeAdded, "dependNode", NULL, &status));
 	if (status != MS::kSuccess)
