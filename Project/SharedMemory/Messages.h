@@ -101,16 +101,17 @@ struct Message
 
 struct CameraChangedMessage : public Message
 {
-	float matrix[16];
+	float viewMatrix[16];
+	bool orthographic = false;
 	double orthoWidth;
 
-	CameraChangedMessage(size_t nameLength, char* name, float matrix[], double orthoWidth)
-		:Message(NODETYPE::CAMERA, MESSAGETYPE::CHANGED, nameLength, name)
+	CameraChangedMessage(size_t nameLength, char* name, float matrix[], double orthoWidth, bool orthographic)
+		:Message(NODETYPE::CAMERA, MESSAGETYPE::CHANGED, nameLength, name), orthographic(orthographic)
 	{
 		this->orthoWidth = orthoWidth;
 
 		for (UINT i = 0; i < 16; ++i)
-			this->matrix[i] = matrix[i];
+			this->viewMatrix[i] = matrix[i];
 	}
 
 	CameraChangedMessage(char* data)
@@ -133,10 +134,14 @@ struct CameraChangedMessage : public Message
 		strcpy_s(name, nameLength, data + location);
 		location += nameLength;
 
-		memcpy(matrix, data + location, sizeof(float) * 16);
+		memcpy(viewMatrix, data + location, sizeof(float) * 16);
 		location += sizeof(float) * 16;
 
 		memcpy(&orthoWidth, data + location, sizeof(double));
+		location += sizeof(double);
+
+		memcpy(&orthographic, data + location, sizeof(bool));
+
 	}
 
 	virtual void* Data() override
@@ -159,15 +164,18 @@ struct CameraChangedMessage : public Message
 		memcpy(data + location, name, nameLength);
 		location += nameLength;
 
-		memcpy(data + location, matrix, sizeof(float) * 16);
+		memcpy(data + location, viewMatrix, sizeof(float) * 16);
 		location += sizeof(float) * 16;
 
 		memcpy(data + location, &orthoWidth, sizeof(double));
+		location += sizeof(double);
+
+		memcpy(data + location, &orthographic, sizeof(bool));
 
 		return data;
 	}
 
-	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + sizeof(float) * 16 + sizeof(double); return messageSize; }
+	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + sizeof(float) * 16 + sizeof(double) + sizeof(bool); return messageSize; }
 };
 
 struct MeshChangedMessage : public Message

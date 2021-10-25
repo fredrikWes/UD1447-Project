@@ -101,10 +101,28 @@ public:
 							std::cout << "Messagelenth: " << message.messageSize << std::endl;
 							std::cout << "MessageType: " << (UINT)message.messageType << std::endl;
 							std::cout << "OrthoWidth: " << message.orthoWidth << std::endl;
+							std::cout << "Orthographic: " << message.orthographic << std::endl;
 							for (UINT i = 0; i < 16; i++)
 							{
-								std::cout << "Matrix: " << message.matrix[i] << std::endl;
+								std::cout << "Matrix: " << message.viewMatrix[i] << std::endl;
 							}
+
+							Matrix viewMatrix, perspectiveMatrix;
+							viewMatrix =Matrix(message.viewMatrix);
+
+							if (message.orthographic)
+							{
+								perspectiveMatrix = Matrix::CreateOrthographic(message.orthoWidth, message.orthoWidth, 0.1f, 100.0f);
+							}
+							else
+							{
+								perspectiveMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
+							}
+								
+
+							renderer->UpdateCameraMatrix((viewMatrix * perspectiveMatrix).Transpose());
+							
+							
 							
 
 							//renderer->UpdateCameraMatrix();

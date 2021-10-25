@@ -111,6 +111,7 @@ void CameraChanged(const MString& str, void* clientData)
 
 		currentView.getCamera(cameraPath);
 		MFnCamera camera(cameraPath);
+	
 		//cout << camera.absoluteName() << endl;
 		//cout << "CAMERA: " << endl << "Far clipping plane: " << camera.farClippingPlane()
 		//	 << endl << "Near clipping plane: " << camera.nearClippingPlane() << endl
@@ -119,7 +120,7 @@ void CameraChanged(const MString& str, void* clientData)
 
 		//cout << "Camera Ortho Width: " << camera.orthoWidth() << endl;
 		
-		MMatrix matrix = viewMatrix * perspectiveMatrix;
+		MMatrix matrix = viewMatrix;
 
 		double orthoWidth = camera.orthoWidth();
 
@@ -140,7 +141,7 @@ void CameraChanged(const MString& str, void* clientData)
 		}
 
 
-		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), matrixArr, orthoWidth);
+		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), matrixArr, orthoWidth, camera.isOrtho());
 		messages.push(message);
 	}
 }
