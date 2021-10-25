@@ -121,11 +121,9 @@ public:
 								
 
 							renderer->UpdateCameraMatrix((viewMatrix * perspectiveMatrix).Transpose());
-							
-							
-							
 
-							//renderer->UpdateCameraMatrix();
+							//std::cout << "NEW MATRIX: " << (viewMatrix * perspectiveMatrix).Transpose()) << endl;
+							
 						}
 						break;
 					}

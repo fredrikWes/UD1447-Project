@@ -134,11 +134,12 @@ void CameraChanged(const MString& str, void* clientData)
 
 
 				matrixArr[index] = matrix.matrix[i][j];
-				//cout << matrix.matrix[i][j] << endl;
+				cout << matrix.matrix[i][j] << endl;
 
 				index++;
 			}
 		}
+
 
 
 		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), matrixArr, orthoWidth, camera.isOrtho());
