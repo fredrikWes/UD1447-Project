@@ -123,11 +123,11 @@ void CameraChanged(const MString& str, void* clientData)
 
 		//VIEW
 		float eyePos[4];
-		camera.eyePoint().get(eyePos);
+		camera.eyePoint(MSpace::kWorld).get(eyePos);
 		float center[4];
-		camera.centerOfInterestPoint().get(center);
+		camera.centerOfInterestPoint(MSpace::kWorld).get(center);
 		double up[3];
-		camera.upDirection().get(up);
+		camera.upDirection(MSpace::kWorld).get(up);
 
 		int portWidth = currentView.portWidth();
 		int portHeight = currentView.portHeight();

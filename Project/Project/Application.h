@@ -143,16 +143,20 @@ public:
 
 							viewMatrix = DirectX::XMMatrixLookAtLH(Vector4(message.eyePos), Vector4(message.center), Vector3((float)message.up[0], (float)message.up[1], (float)message.up[2]));
 
-							float aspectRatio = message.horFOV / message.verFOV;
+							float aspectRatio = (float)message.portWidth / message.portHeight;
+							float orthoAspectRatio = (float)message.portHeight / message.portWidth;
+
+							Graphics::SetViewPort(message.portWidth, message.portHeight);
 
 							if (message.orthographic)
 							{
-								perspectiveMatrix = DirectX::XMMatrixOrthographicLH(message.orthoWidth, message.orthoWidth, message.nearZ, message.farZ);
+								perspectiveMatrix = DirectX::XMMatrixOrthographicLH(message.orthoWidth, message.orthoWidth* orthoAspectRatio, message.nearZ, message.farZ);
 								//perspectiveMatrix = Matrix::CreateOrthographic(message.orthoWidth, message.orthoWidth, 0.1f, 100.0f);
 							}
 							else
 							{
-								perspectiveMatrix = DirectX::XMMatrixPerspectiveFovLH(message.verFOV * (180 / DirectX::XM_PI), aspectRatio, message.nearZ, message.farZ);
+								//perspectiveMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
+								perspectiveMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, message.nearZ, message.farZ);
 							}
 							
 							Matrix finalMatrix = Matrix((viewMatrix * perspectiveMatrix).Transpose());
