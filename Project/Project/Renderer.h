@@ -87,7 +87,7 @@ public:
 		
 		for (auto& [name, mesh] : meshes)
 		{
-			matrices.world = mesh->matrix;
+			matrices.world = mesh->matrix.Transpose();
 			Graphics::UpdateConstantBuffer(matricesBuffer, matrices);
 
 			mesh->Draw();

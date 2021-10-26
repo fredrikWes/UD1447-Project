@@ -72,7 +72,6 @@ inline bool ProcessMesh(MFnMesh& mesh, std::vector<int>& indices, std::vector<Ve
 	//FIRST INITIALIZE OF MESH
 	if (vertexCache.find(meshName) == vertexCache.end())
 	{
-		cout << "INIT MESH" << endl;
 		vertexCache[meshName] = vertices;
 		for (UINT i = 0; i < vertices.size(); ++i)
 			indices.emplace_back(i);
@@ -93,15 +92,17 @@ inline bool ProcessMesh(MFnMesh& mesh, std::vector<int>& indices, std::vector<Ve
 		UINT index = i - 1;
 		cout << "VERTEX: " << index << endl;
 
-		if (i > oldVertices.size())
-			indices.emplace_back(index);
-		else
-		{
-			if (vertices[index] == oldVertices[index])
-				vertices.erase(vertices.begin() + index);
-			else
-				indices.emplace_back(index);
-		}
+		//if (i > oldVertices.size())
+		//	indices.emplace_back(index);
+		//else
+		//{
+		//	if (vertices[index] == oldVertices[index])
+		//		vertices.erase(vertices.begin() + index);
+		//	else
+		//		indices.emplace_back(index);
+		//}
+
+		indices.emplace_back(index);
 	}
 
 	/*

@@ -79,14 +79,9 @@ public:
 						if (msg->messageType == MESSAGETYPE::CHANGED)
 						{
 							MeshChangedMessage message = MeshChangedMessage(data);
-							for (auto& [name, node] : nodes)
-							{
-								if (std::string(message.name).find(name))
-								{
-									std::dynamic_pointer_cast<Mesh>(nodes[name])->Update(message);
-									break;
-								}
-							}
+
+							if (nodes.find(message.name) != nodes.end())
+								std::dynamic_pointer_cast<Mesh>(nodes[message.name])->Update(message);
 						}
 
 						if (msg->messageType == MESSAGETYPE::REMOVED)
@@ -102,14 +97,8 @@ public:
 					{
 						TransformChangedMessage message = TransformChangedMessage(data);
 
-						for (auto& [name, node] : nodes)
-						{
-							if (std::string(message.name).find(name))
-							{
-								std::dynamic_pointer_cast<Mesh>(nodes[message.name])->matrix = Matrix(message.matrix);
-								break;
-							}
-						}
+						if (nodes.find(message.name) != nodes.end())
+							std::dynamic_pointer_cast<Mesh>(nodes[message.name])->matrix = Matrix(message.matrix);
 
 						break;
 					}
@@ -124,32 +113,12 @@ public:
 
 							viewMatrix = Matrix(message.viewMatrix);
 							perspectiveMatrix = Matrix(message.perspectiveMatrix);
-							
-							/*viewMatrix = Matrix(message.viewMatrix[0], message.viewMatrix[1], message.viewMatrix[2], message.viewMatrix[3], message.viewMatrix[4],
-								message.viewMatrix[5], message.viewMatrix[6], message.viewMatrix[7], message.viewMatrix[8], message.viewMatrix[9],
-								message.viewMatrix[10], message.viewMatrix[11], message.viewMatrix[12], message.viewMatrix[13],
-								message.viewMatrix[14], message.viewMatrix[15]);*/
-						
-							/*perspectiveMatrix = Matrix(message.perspectiveMatrix[0], message.perspectiveMatrix[1], message.perspectiveMatrix[2], message.perspectiveMatrix[3], message.perspectiveMatrix[4],
-								message.perspectiveMatrix[5], message.perspectiveMatrix[6], message.perspectiveMatrix[7], message.perspectiveMatrix[8], message.perspectiveMatrix[9],
-								message.perspectiveMatrix[10], message.perspectiveMatrix[11], message.perspectiveMatrix[12], message.perspectiveMatrix[13],
-								message.perspectiveMatrix[14], message.perspectiveMatrix[15]);*/
 
-							if (message.orthographic)
-							{
-								//perspectiveMatrix = Matrix::CreateOrthographic(message.orthoWidth, message.orthoWidth, 0.1f, 100.0f);
-							}
-
-							else
-							{
-								//perspectiveMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
-								//perspectiveMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
-							}
-							
 							Matrix finalMatrix = Matrix((viewMatrix * perspectiveMatrix).Transpose());
 
 							renderer->UpdateCameraMatrix(finalMatrix);							
 						}
+
 						break;
 					}
 

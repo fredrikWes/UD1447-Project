@@ -15,6 +15,7 @@ SharedMemory memory;
 queue<Message*> messages;
 
 #undef SendMessage
+
 bool SendMessage(Message* message)
 {
 	void* data;
@@ -28,22 +29,44 @@ bool SendMessage(Message* message)
 			{
 				data = message->Data();
 				sent = memory.Send(data, message->Size());
+				if (sent)
+				{
+					cout << "---SENT MESH ADDED MESSAGE---" << endl;
+					cout << message->name << endl;
+				}
 				delete data;
 			}
 
 			else if (message->messageType == MESSAGETYPE::CHANGED)
 			{
 				auto meshChanged = static_cast<MeshChangedMessage*>(message);
-				cout << "---TRYING TO SEND MESH CHANGED MESSAGE---" << endl;
 				cout << meshChanged->Size() << " " << meshChanged->name << " " << meshChanged->vertices[0].Px << endl;
 				data = meshChanged->Data();
 				sent = memory.Send(data, meshChanged->Size());
 				if (sent)
+				{
 					cout << "---SENT MESH CHANGED MESSAGE---" << endl;
+					cout << meshChanged->name << endl;
+					cout << meshChanged->numIndices << endl;
+				}
+					
 				delete data;
 			}
 
 			break;
+		}
+
+		case NODETYPE::TRANSFORM:
+		{
+			auto transformChanged = static_cast<TransformChangedMessage*>(message);
+			data = transformChanged->Data();
+			sent = memory.Send(data, transformChanged->Size());
+			if (sent)
+			{
+				cout << "---SENT TRANSFORM CHANGED MESSAGE---" << endl;
+				cout << transformChanged->name << endl;
+				cout << transformChanged->matrix[0] << endl;
+			}
 		}
 
 		case NODETYPE::CAMERA:
@@ -51,12 +74,16 @@ bool SendMessage(Message* message)
 			if (message->messageType == MESSAGETYPE::CHANGED)
 			{
 				auto cameraChanged = static_cast<CameraChangedMessage*>(message);
-				cout << "---TRYING TO SEND CAMERA CHANGED MESSAGE---" << endl;
 				cout << cameraChanged->Size() << " " << cameraChanged->name << endl;
 				data = cameraChanged->Data();
 				sent = memory.Send(data, cameraChanged->Size());
 				if (sent)
+				{
 					cout << "---SENT CAMERA CHANGED MESSAGE---" << endl;
+					cout << cameraChanged->name << endl;
+					cout << cameraChanged->orthoWidth << endl;
+				}
+					
 				delete data;
 			}
 		}
@@ -122,12 +149,13 @@ void NotifyTransformChanged(const MObject& node)
 void TransformChanged(MObject& node, MDagMessage::MatrixModifiedFlags& modified, void* clientData)
 {
 	cout << "\n============================= TRANSFORM CHANGED =============================" << endl;
+	cout << MFnDependencyNode(node, &status).name() << endl;
 	NotifyTransformChanged(node);
 }
 
 void CameraChanged(const MString& str, void* clientData)
 {
-	MString cmd = "getPanel -wf"; //wf = with focus (current panel)
+	MString cmd = "getPanel -wf";
 	MString activePanel = MGlobal::executeCommandStringResult(cmd);
 
 	if (strcmp(str.asChar(), activePanel.asChar()) == 0)
@@ -153,57 +181,12 @@ void CameraChanged(const MString& str, void* clientData)
 		float viewMatrixArr[16] = {};
 		float perspMatrixArr[16] = {};
 
-		/*viewMatrixArr[0] = viewMatrix[0][0];
-		viewMatrixArr[1] = viewMatrix[1][0];
-		viewMatrixArr[2] = viewMatrix[2][0];
-		viewMatrixArr[3] = viewMatrix[3][0];
-
-		viewMatrixArr[4] = viewMatrix[0][1];
-		viewMatrixArr[5] = viewMatrix[1][1];
-		viewMatrixArr[6] = viewMatrix[2][1];
-		viewMatrixArr[7] = viewMatrix[3][1];
-
-		viewMatrixArr[8] = viewMatrix[0][2];
-		viewMatrixArr[9] = viewMatrix[1][2];
-		viewMatrixArr[10] = viewMatrix[2][2];
-		viewMatrixArr[11] = viewMatrix[3][2];
-
-		viewMatrixArr[12] = viewMatrix[0][3];
-		viewMatrixArr[13] = viewMatrix[1][3];
-		viewMatrixArr[14] = viewMatrix[2][3];
-		viewMatrixArr[15] = viewMatrix[3][3];
-
-		
-		perspMatrixArr[0] = perspectiveMatrix[0][0];
-		perspMatrixArr[1] = perspectiveMatrix[1][0];
-		perspMatrixArr[2] = perspectiveMatrix[2][0];
-		perspMatrixArr[3] = perspectiveMatrix[3][0];
-
-		perspMatrixArr[4] = perspectiveMatrix[0][1];
-		perspMatrixArr[5] = perspectiveMatrix[1][1];
-		perspMatrixArr[6] = perspectiveMatrix[2][1];
-		perspMatrixArr[7] = perspectiveMatrix[3][1];
-
-		perspMatrixArr[8] = perspectiveMatrix[0][2];
-		perspMatrixArr[9] = perspectiveMatrix[1][2];
-		perspMatrixArr[10] = perspectiveMatrix[2][2];
-		perspMatrixArr[11] = perspectiveMatrix[3][2];
-
-		perspMatrixArr[12] = perspectiveMatrix[0][3];
-		perspMatrixArr[13] = perspectiveMatrix[1][3];
-		perspMatrixArr[14] = perspectiveMatrix[2][3];
-		perspMatrixArr[15] = perspectiveMatrix[3][3];*/
-
-
-
 		UINT index = 0;
 		for (UINT i = 0; i < 4; ++i)
 		{
 			for (UINT j = 0; j < 4; j++)
 			{
 				viewMatrixArr[index] = vMatrix.matrix[i][j];
-				cout << vMatrix.matrix[i][j] << endl;
-
 				index++;
 			}
 		}
@@ -214,12 +197,9 @@ void CameraChanged(const MString& str, void* clientData)
 			for (UINT l = 0; l < 4; l++)
 			{
 				perspMatrixArr[index] = pMatrix.matrix[k][l];
-				cout << pMatrix.matrix[k][l] << endl;
-
 				index++;
 			}
 		}
-		index = 0;
 
 		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), viewMatrixArr, perspMatrixArr, orthoWidth, camera.isOrtho());
 		messages.push(message);
@@ -238,7 +218,7 @@ void MeshChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPl
 	if (status != MS::kSuccess)
 		return;
 
-	string nodeName = MFnDependencyNode(node, &status).name().asChar();
+	MString nodeName = MFnDependencyNode(mesh.parent(0), &status).name();
 	if (status != MS::kSuccess)
 		return;
 
@@ -266,7 +246,8 @@ void MeshChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPl
 			return;
 
 		cout << "\n============================= GEOMETRY CHANGED =============================" << endl;
-		MeshChangedMessage* message = new MeshChangedMessage(NODETYPE::MESH, MESSAGETYPE::CHANGED, MFnDependencyNode(node, &status).name().numChars(), (char*)MFnDependencyNode(node, &status).name().asChar(), indices.data(), indices.size(), vertices.data(), vertices.size(), vertexCache[nodeName].size());
+		cout << nodeName << endl;
+		MeshChangedMessage* message = new MeshChangedMessage(NODETYPE::MESH, MESSAGETYPE::CHANGED, nodeName.numChars(), (char*)nodeName.asChar(), indices.data(), indices.size(), vertices.data(), vertices.size(), vertexCache[mesh.name().asChar()].size());
 		messages.push(message);
 	}
 }
@@ -280,20 +261,12 @@ void NodeAdded(MObject& node, void* clientData)
 	bool found = false;
 	MString nodeName = MFnDependencyNode(node).name();
 
-	MDagPath dagPath;
-	MFnDagNode(node).getPath(dagPath);
-	std::string path(dagPath.fullPathName().asChar());
-	auto it = path.find_first_of('|') + 1;
-	path = path.substr(it);
-	it = path.find_first_of('|');
-	path = path.substr(0, it);
-	nodeName = MString(path.c_str());
-
 	switch (node.apiType())
 	{
 		case MFn::Type::kMesh:
 		{
 			found = true;
+			nodeName = MFnDependencyNode(MFnDagNode(node).parent(0)).name();
 			messages.push(new Message(NODETYPE::MESH, MESSAGETYPE::ADDED, nodeName.numChars(), (char*)nodeName.asChar()));
 			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MeshChanged, NULL, &status));
 			break;
@@ -302,27 +275,26 @@ void NodeAdded(MObject& node, void* clientData)
 		case MFn::Type::kTransform:
 		{
 			found = true;
+			MFnDagNode dagNode(node);
+			MDagPath dagPath;
+			dagNode.getPath(dagPath);
 			callbackIdArray.append(MDagMessage::addMatrixModifiedCallback(dagPath, TransformChanged, NULL, &status));
 			break;
 		}
 
-		case MFn::Type::kPhong: //ONLY ACCEPTS PHONG AS MATERIAL
+		case MFn::Type::kPhong:
+		{
 			found = true;
-			cout << node.apiTypeStr() << endl;
 			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MaterialChanged, NULL, &status));
 			break;
-
-		case MFn::Type::kCamera:
-			found = true;
-			//callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, CameraChanged, NULL, &status));
-			break;
+		}
 	}
 
 	if (!found)
 		return;
 
 	cout << "\n============================= NODE ADDED =============================" << endl;
-	cout << "ADDED NODE: " << MFnDependencyNode(node).name() << endl;
+	cout << "ADDED NODE: " << nodeName << endl;
 }
 
 //NODE REMOVED
@@ -333,23 +305,17 @@ void NodeRemoved(MObject& node, void* clientData)
 
 	bool found = false;
 	MString nodeName = MFnDependencyNode(node).name();
-	cout << node.apiTypeStr() << endl;
 
 	switch (node.apiType())
 	{
 	case MFn::Type::kMesh:
 		found = true;
+		nodeName = MFnDependencyNode(MFnDagNode(node).parent(0)).name();
 		messages.push(new Message(NODETYPE::MESH, MESSAGETYPE::REMOVED, nodeName.numChars(), (char*)nodeName.asChar()));
 		break;
 
-	case MFn::Type::kTransform:
+	case MFn::Type::kPhong:
 		found = true;
-		//ADD TRANSFORM ADDED MESSAGE
-		break;
-
-	case MFn::Type::kPhong: //ONLY ACCEPTS PHONG AS MATERIAL
-		found = true;
-		cout << node.apiTypeStr() << endl;
 		break;
 	}
 
@@ -357,7 +323,7 @@ void NodeRemoved(MObject& node, void* clientData)
 		return;
 
 	cout << "\n============================= NODE REMOVED =============================" << endl;
-	cout << "REMOVED NODE: " << MFnDependencyNode(node).name() << endl;
+	cout << "REMOVED NODE: " << nodeName << endl;
 }
 
 //TIMER
@@ -389,22 +355,21 @@ EXPORT MStatus initializePlugin(MObject obj)
 
 	cout << "============================= >>>> PLUGIN LOADED <<<< =============================" << endl;
 
+	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel1", CameraChanged, &status));
+	if (status != MS::kSuccess)
+		return status;
 
-	//callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel1", CameraChanged, &status));
-	//if (status != MS::kSuccess)
-	//	return status;
+	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel2", CameraChanged, &status));
+	if (status != MS::kSuccess)
+		return status;
 
-	//callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel2", CameraChanged, &status));
-	//if (status != MS::kSuccess)
-	//	return status;
+	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel3", CameraChanged, &status));
+	if (status != MS::kSuccess)
+		return status;
 
-	//callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel3", CameraChanged, &status));
-	//if (status != MS::kSuccess)
-	//	return status;
-
-	//callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel4", CameraChanged, &status));
-	//if (status != MS::kSuccess)
-	//	return status;
+	callbackIdArray.append(MUiMessage::add3dViewPreRenderMsgCallback("modelPanel4", CameraChanged, &status));
+	if (status != MS::kSuccess)
+		return status;
 
 	callbackIdArray.append(MDGMessage::addNodeAddedCallback(NodeAdded, "dependNode", NULL, &status));
 	if (status != MS::kSuccess)
