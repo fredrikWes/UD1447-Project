@@ -97,7 +97,7 @@ public:
 						if (msg->messageType == MESSAGETYPE::CHANGED)
 						{
 							CameraChangedMessage message = CameraChangedMessage(data);
-							std::cout << "Name: " << message.name << std::endl;
+							/*std::cout << "Name: " << message.name << std::endl;
 							std::cout << "Messagelenth: " << message.messageSize << std::endl;
 							std::cout << "MessageType: " << (UINT)message.messageType << std::endl;
 							std::cout << "OrthoWidth: " << message.orthoWidth << std::endl;
@@ -118,30 +118,11 @@ public:
 							std::cout << "Up: " << message.up[1] << std::endl;
 							std::cout << "Up: " << message.up[2] << std::endl;
 							std::cout << "PortWidth: " << message.portWidth << std::endl;
-							std::cout << "PortHeight: " << message.portHeight << std::endl;
-
-							/*for (UINT i = 0; i < 16; i++)
-							{
-								std::cout << "View Matrix: " << message.viewMatrix[i] << std::endl;
-							}
-
-							for (UINT i = 0; i < 16; i++)
-							{
-								std::cout << "Perpective Matrix: " << message.perspectiveMatrix[i] << std::endl;
-							}
-
-							Matrix viewMatrix, perspectiveMatrix;
-							viewMatrix = Matrix(message.viewMatrix[0], message.viewMatrix[1], message.viewMatrix[2], message.viewMatrix[3], message.viewMatrix[4],
-								message.viewMatrix[5], message.viewMatrix[6], message.viewMatrix[7], message.viewMatrix[8], message.viewMatrix[9],
-								message.viewMatrix[10], message.viewMatrix[11], message.viewMatrix[12], message.viewMatrix[13],
-								message.viewMatrix[14], message.viewMatrix[15]);
-						
-							perspectiveMatrix = Matrix(message.perspectiveMatrix[0], message.perspectiveMatrix[1], message.perspectiveMatrix[2], message.perspectiveMatrix[3], message.perspectiveMatrix[4],
-								message.perspectiveMatrix[5], message.perspectiveMatrix[6], message.perspectiveMatrix[7], message.perspectiveMatrix[8], message.perspectiveMatrix[9],
-								message.perspectiveMatrix[10], message.perspectiveMatrix[11], message.perspectiveMatrix[12], message.perspectiveMatrix[13],
-								message.perspectiveMatrix[14], message.perspectiveMatrix[15]);*/
-
-							viewMatrix = DirectX::XMMatrixLookAtLH(Vector4(message.eyePos[2], message.eyePos[1], message.eyePos[0], message.eyePos[3]), Vector4(message.center[2], message.center[1], message.center[0], message.center[3]), Vector3((float)message.up[2], (float)message.up[1], (float)message.up[0]));
+							std::cout << "PortHeight: " << message.portHeight << std::endl;*/
+							//message.eyePos[2], message.eyePos[1], message.eyePos[0], message.eyePos[3]), Vector4(message.center[2], message.center[1], message.center[0]
+							viewMatrix = DirectX::XMMatrixLookAtLH(Vector4(message.eyePos[2], message.eyePos[1], message.eyePos[0], message.eyePos[3]), 
+																   Vector4(message.center[2], message.center[1], message.center[0], message.center[3]), 
+																   Vector3((float)message.up[2], (float)message.up[1], (float)message.up[0]));
 
 							float aspectRatio = (float)message.portWidth / message.portHeight;
 							float orthoAspectRatio = (float)message.portHeight / message.portWidth;
@@ -149,16 +130,11 @@ public:
 							Graphics::SetViewPort(message.portWidth, message.portHeight);
 
 							if (message.orthographic)
-							{
 								perspectiveMatrix = DirectX::XMMatrixOrthographicLH(message.orthoWidth, message.orthoWidth* orthoAspectRatio, message.nearZ, message.farZ);
-								//perspectiveMatrix = Matrix::CreateOrthographic(message.orthoWidth, message.orthoWidth, 0.1f, 100.0f);
-							}
-							else
-							{
-								//perspectiveMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
-								perspectiveMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, message.nearZ, message.farZ);
-							}
 							
+							else
+								perspectiveMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, message.nearZ, message.farZ);
+
 							Matrix finalMatrix = Matrix((viewMatrix * perspectiveMatrix).Transpose());
 
 							renderer->UpdateCameraMatrix(finalMatrix);							

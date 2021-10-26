@@ -115,6 +115,7 @@ void CameraChanged(const MString& str, void* clientData)
 		MMatrix vMatrix = viewMatrix;
 		MMatrix pMatrix = perspectiveMatrix;
 		
+		//ORTHO
 		double orthoWidth = camera.orthoWidth();
 		float nearZ = camera.unnormalizedNearClippingPlane();
 		float farZ = camera.unnormalizedFarClippingPlane();
@@ -132,33 +133,6 @@ void CameraChanged(const MString& str, void* clientData)
 		int portWidth = currentView.portWidth();
 		int portHeight = currentView.portHeight();
 
-		//float viewMatrixArr[16] = {};
-		//float perspMatrixArr[16] = {};
-
-		//UINT index = 0;
-		//for (UINT i = 0; i < 4; ++i)
-		//{
-		//	for (UINT j = 0; j < 4; j++)
-		//	{
-		//		viewMatrixArr[index] = vMatrix.matrix[i][j];
-		//		//cout << vMatrix.matrix[i][j] << endl;
-
-		//		index++;
-		//	}
-		//}
-
-		//index = 0;
-		//for (UINT k = 0; k < 4; ++k)
-		//{
-		//	for (UINT l = 0; l < 4; l++)
-		//	{
-		//		perspMatrixArr[index] = pMatrix.matrix[k][l];
-		//		//cout << pMatrix.matrix[k][l] << endl;
-
-		//		index++;
-		//	}
-		//}
-		//index = 0;
 
 		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), orthoWidth, camera.isOrtho(), nearZ, farZ, horFOV, verFOV, eyePos, center, up, portWidth, portHeight);
 		messages.push(message);

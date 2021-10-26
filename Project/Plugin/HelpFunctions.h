@@ -29,7 +29,7 @@ inline Vertex ProcessVertex(MFnMesh& mesh, UINT polygonID, UINT vertexID, MIntAr
 
 inline void ProcessTriangle(MFnMesh& mesh, UINT polygonID, MIntArray vertexList, UINT numVertices, std::vector<Vertex>& vertices)
 {
-	for (UINT j = numVertices + 1; j > 0; --j)
+	for (UINT j = numVertices; j > 0; --j)
 		vertices.emplace_back(ProcessVertex(mesh, polygonID, j -1, vertexList));
 }
 
