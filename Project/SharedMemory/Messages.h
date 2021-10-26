@@ -101,8 +101,6 @@ struct Message
 
 struct CameraChangedMessage : public Message
 {
-	//float viewMatrix[16];
-	//float perspectiveMatrix[16];
 	bool orthographic = false;
 	double orthoWidth;
 	float nearZ;
@@ -375,8 +373,7 @@ struct TransformChangedMessage : public Message
 	TransformChangedMessage(size_t nameLength, char* name, float matrix[16])
 		:Message(NODETYPE::TRANSFORM, MESSAGETYPE::CHANGED, nameLength, name)
 	{
-		for (UINT i = 0; i < 16; ++i)
-			this->matrix[i] = matrix[i];
+		memcpy(this->matrix, matrix, sizeof(float) * 16);
 	}
 
 	TransformChangedMessage(char* data)

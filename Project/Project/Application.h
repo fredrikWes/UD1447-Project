@@ -63,6 +63,9 @@ public:
 
 			if (received)
 			{
+				static int temp = 0;
+				std::cout << ">>>>>>>>>>>>>>>>>>>>>>>RECIEVED<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << temp++ << "\n";
+
 				Message* msg = new Message(data);
 
 				switch (msg->nodeType)
@@ -133,7 +136,6 @@ public:
 							std::cout << "Up: " << message.up[2] << std::endl;
 							std::cout << "PortWidth: " << message.portWidth << std::endl;
 							std::cout << "PortHeight: " << message.portHeight << std::endl;*/
-							//message.eyePos[2], message.eyePos[1], message.eyePos[0], message.eyePos[3]), Vector4(message.center[2], message.center[1], message.center[0]
 							viewMatrix = DirectX::XMMatrixLookAtLH(Vector4(message.eyePos[2], message.eyePos[1], message.eyePos[0], message.eyePos[3]), 
 																   Vector4(message.center[2], message.center[1], message.center[0], message.center[3]), 
 																   Vector3((float)message.up[2], (float)message.up[1], (float)message.up[0]));

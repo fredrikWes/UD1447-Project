@@ -1,4 +1,5 @@
 #include "HelpFunctions.h"
+#include <chrono>
 #include <iostream>
 #include <queue>
 
@@ -13,6 +14,14 @@ double timeElapsed = 0;
 SharedMemory memory;
 
 queue<Message*> messages;
+
+chrono::high_resolution_clock timer;
+chrono::high_resolution_clock::time_point lastCameraUpdate;
+chrono::high_resolution_clock::time_point lastTransformUpdate;
+chrono::high_resolution_clock::time_point lastMeshUpdate;
+
+int numSkipped = 0;
+int numPassed = 0;
 
 #undef SendMessage
 
@@ -117,6 +126,9 @@ void MaterialChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &oth
 
 void NotifyTransformChanged(const MObject& node)
 {
+	if (node.apiType() != MFn::Type::kTransform)
+		return;
+
 	MFnDagNode dagNode(node);
 	MDagPath dagPath;
 
@@ -140,7 +152,8 @@ void NotifyTransformChanged(const MObject& node)
 		}
 	}
 
-	SendMessage(new TransformChangedMessage(dagNode.name().numChars(), (char*)dagNode.name().asChar(), matrixArr));
+	Message* message = new TransformChangedMessage(dagNode.name().numChars(), (char*)dagNode.name().asChar(), matrixArr);
+	messages.push(message);
 
 	for (UINT i = 0; i < dagNode.childCount(); ++i)
 		NotifyTransformChanged(dagNode.child(i));
@@ -148,13 +161,34 @@ void NotifyTransformChanged(const MObject& node)
 
 void TransformChanged(MObject& node, MDagMessage::MatrixModifiedFlags& modified, void* clientData)
 {
+	//if (true)
+	//{
+	//	cout << "======================================" << endl;
+	//	cout << "NUM PASSED: " << numPassed << endl;
+	//	cout << "NUM SKIPPED: " << numSkipped << endl;
+	//}
+
+	//auto secondsSinceUpdate = chrono::duration_cast<chrono::milliseconds>(timer.now() - lastTransformUpdate).count();
+	//if (secondsSinceUpdate < 17.0)
+	//{
+	//	numSkipped++;
+	//	return;
+	//}
+		
 	cout << "\n============================= TRANSFORM CHANGED =============================" << endl;
 	cout << MFnDependencyNode(node, &status).name() << endl;
 	NotifyTransformChanged(node);
+
+	lastTransformUpdate = timer.now();
+	numPassed++;
 }
 
 void CameraChanged(const MString& str, void* clientData)
 {
+	auto secondsSinceUpdate = chrono::duration_cast<chrono::milliseconds>(timer.now() - lastCameraUpdate).count();
+	if (secondsSinceUpdate < 17.0)
+		return;
+
 	MString cmd = "getPanel -wf";
 	MString activePanel = MGlobal::executeCommandStringResult(cmd);
 
@@ -194,9 +228,10 @@ void CameraChanged(const MString& str, void* clientData)
 		int portWidth = currentView.portWidth();
 		int portHeight = currentView.portHeight();
 
-
 		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), orthoWidth, camera.isOrtho(), nearZ, farZ, horFOV, verFOV, eyePos, center, up, portWidth, portHeight);
 		messages.push(message);
+
+		lastCameraUpdate = timer.now();
 	}
 }
 
@@ -241,7 +276,8 @@ void MeshChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPl
 
 		cout << "\n============================= GEOMETRY CHANGED =============================" << endl;
 		cout << nodeName << endl;
-		SendMessage(new MeshChangedMessage(NODETYPE::MESH, MESSAGETYPE::CHANGED, nodeName.numChars(), (char*)nodeName.asChar(), indices.data(), indices.size(), vertices.data(), vertices.size(), vertexCache[mesh.name().asChar()].size()));
+		Message* message = new MeshChangedMessage(NODETYPE::MESH, MESSAGETYPE::CHANGED, nodeName.numChars(), (char*)nodeName.asChar(), indices.data(), indices.size(), vertices.data(), vertices.size(), vertexCache[mesh.name().asChar()].size());
+		messages.push(message);
 	}
 }
 
@@ -260,7 +296,8 @@ void NodeAdded(MObject& node, void* clientData)
 		{
 			found = true;
 			nodeName = MFnDependencyNode(MFnDagNode(node).parent(0)).name();
-			SendMessage(new Message(NODETYPE::MESH, MESSAGETYPE::ADDED, nodeName.numChars(), (char*)nodeName.asChar()));
+			Message* message = new Message(NODETYPE::MESH, MESSAGETYPE::ADDED, nodeName.numChars(), (char*)nodeName.asChar());
+			messages.push(message);
 			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MeshChanged, NULL, &status));
 			break;
 		}
@@ -301,13 +338,17 @@ void NodeRemoved(MObject& node, void* clientData)
 
 	switch (node.apiType())
 	{
-	case MFn::Type::kMesh:
-		nodeName = MFnDependencyNode(MFnDagNode(node).parent(0)).name();
-		SendMessage(new Message(NODETYPE::MESH, MESSAGETYPE::REMOVED, nodeName.numChars(), (char*)nodeName.asChar()));
-		break;
+		case MFn::Type::kMesh:
+		{
+			nodeName = MFnDependencyNode(MFnDagNode(node).parent(0)).name();
+			Message* message = new Message(NODETYPE::MESH, MESSAGETYPE::REMOVED, nodeName.numChars(), (char*)nodeName.asChar());
+			messages.push(message);
+			break;
+		}
+		
 
-	case MFn::Type::kPhong:
-		break;
+		case MFn::Type::kPhong:
+			break;
 	}
 
 	cout << "\n============================= NODE REMOVED =============================" << endl;
@@ -317,12 +358,12 @@ void NodeRemoved(MObject& node, void* clientData)
 //TIMER
 void TimerCallback(float elapsedTime, float lastTime, void* clientData)
 {
-	//if (!messages.empty())
-	//{
-	//	bool sent = SendMessage(messages.front());
-	//	if (sent)
-	//		messages.pop();
-	//}
+	if (!messages.empty())
+	{
+		bool sent = SendMessage(messages.front());
+		if (sent)
+			messages.pop();
+	}
 }
 
 //INITIALIZE
