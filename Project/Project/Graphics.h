@@ -2,6 +2,7 @@
 #include <d3d11.h>
 #include <string>
 
+
 enum class Shader { VS, PS };
 
 class Graphics
@@ -24,6 +25,8 @@ private:
 public:
 	static bool Initialize(UINT clientWidth, UINT clientHeight, HWND hWnd);
 	static void ShutDown();
+
+	static void SetViewPort(int width, int height);
 
 	static void BeginFrame();
 	static void EndFrame() { swapChain->Present(0, 0); }

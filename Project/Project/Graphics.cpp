@@ -114,6 +114,17 @@ void Graphics::ShutDown()
 	context->Release();
 	device->Release();
 }
+#include "Window.h"
+void Graphics::SetViewPort(int width, int height)
+{
+	
+	SetWindowPos(Window::GetHWND(), NULL, 0, 0, width, height, SWP_SHOWWINDOW | SWP_NOMOVE);
+
+	viewport.Width = static_cast<float>(width);
+	viewport.Height = static_cast<float>(height);
+	viewport.TopLeftX = 0;
+	viewport.TopLeftY = 0;
+}
 
 void Graphics::BeginFrame()
 {

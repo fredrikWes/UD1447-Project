@@ -110,9 +110,44 @@ public:
 							CameraChangedMessage message = CameraChangedMessage(data);
 
 							Matrix viewMatrix, perspectiveMatrix;
+							
+							/*std::cout << "Name: " << message.name << std::endl;
+							std::cout << "Messagelenth: " << message.messageSize << std::endl;
+							std::cout << "MessageType: " << (UINT)message.messageType << std::endl;
+							std::cout << "OrthoWidth: " << message.orthoWidth << std::endl;
+							std::cout << "Orthographic: " << message.orthographic << std::endl;
+							std::cout << "NearZ: " << message.nearZ << std::endl;
+							std::cout << "FarZ: " << message.farZ << std::endl;
+							std::cout << "Vertical FOV: " << message.verFOV << std::endl;
+							std::cout << "Horizontal FOV: " << message.horFOV << std::endl;
+							std::cout << "EyePos: " << message.eyePos[0] << std::endl;
+							std::cout << "EyePos: " << message.eyePos[1] << std::endl;
+							std::cout << "EyePos: " << message.eyePos[2] << std::endl;
+							std::cout << "EyePos: " << message.eyePos[3] << std::endl;
+							std::cout << "Center: " << message.center[0] << std::endl;
+							std::cout << "Center: " << message.center[1] << std::endl;
+							std::cout << "Center: " << message.center[2] << std::endl;
+							std::cout << "Center: " << message.center[3] << std::endl;
+							std::cout << "Up: " << message.up[0] << std::endl;
+							std::cout << "Up: " << message.up[1] << std::endl;
+							std::cout << "Up: " << message.up[2] << std::endl;
+							std::cout << "PortWidth: " << message.portWidth << std::endl;
+							std::cout << "PortHeight: " << message.portHeight << std::endl;*/
+							//message.eyePos[2], message.eyePos[1], message.eyePos[0], message.eyePos[3]), Vector4(message.center[2], message.center[1], message.center[0]
+							viewMatrix = DirectX::XMMatrixLookAtLH(Vector4(message.eyePos[2], message.eyePos[1], message.eyePos[0], message.eyePos[3]), 
+																   Vector4(message.center[2], message.center[1], message.center[0], message.center[3]), 
+																   Vector3((float)message.up[2], (float)message.up[1], (float)message.up[0]));
 
-							viewMatrix = Matrix(message.viewMatrix);
-							perspectiveMatrix = Matrix(message.perspectiveMatrix);
+							float aspectRatio = (float)message.portWidth / message.portHeight;
+							float orthoAspectRatio = (float)message.portHeight / message.portWidth;
+
+							Graphics::SetViewPort(message.portWidth, message.portHeight);
+
+							if (message.orthographic)
+								perspectiveMatrix = DirectX::XMMatrixOrthographicLH(message.orthoWidth, message.orthoWidth* orthoAspectRatio, message.nearZ, message.farZ);
+							
+							else
+								perspectiveMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, message.nearZ, message.farZ);
 
 							Matrix finalMatrix = Matrix((viewMatrix * perspectiveMatrix).Transpose());
 

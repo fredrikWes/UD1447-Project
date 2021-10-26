@@ -175,33 +175,28 @@ void CameraChanged(const MString& str, void* clientData)
 			
 		MMatrix vMatrix = viewMatrix;
 		MMatrix pMatrix = perspectiveMatrix;
-
+		
+		//ORTHO
 		double orthoWidth = camera.orthoWidth();
+		float nearZ = camera.unnormalizedNearClippingPlane();
+		float farZ = camera.unnormalizedFarClippingPlane();
+		float horFOV = camera.horizontalFieldOfView();
+		float verFOV = camera.verticalFieldOfView();
 
-		float viewMatrixArr[16] = {};
-		float perspMatrixArr[16] = {};
+		//VIEW
+		float eyePos[4];
+		camera.eyePoint(MSpace::kWorld).get(eyePos);
+		float center[4];
+		camera.centerOfInterestPoint(MSpace::kWorld).get(center);
+		double up[3];
+		camera.upDirection(MSpace::kWorld).get(up);
 
-		UINT index = 0;
-		for (UINT i = 0; i < 4; ++i)
-		{
-			for (UINT j = 0; j < 4; j++)
-			{
-				viewMatrixArr[index] = vMatrix.matrix[i][j];
-				index++;
-			}
-		}
+		int portWidth = currentView.portWidth();
+		int portHeight = currentView.portHeight();
 
-		index = 0;
-		for (UINT k = 0; k < 4; ++k)
-		{
-			for (UINT l = 0; l < 4; l++)
-			{
-				perspMatrixArr[index] = pMatrix.matrix[k][l];
-				index++;
-			}
-		}
 
-		SendMessage(new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), viewMatrixArr, perspMatrixArr, orthoWidth, camera.isOrtho()));
+		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), orthoWidth, camera.isOrtho(), nearZ, farZ, horFOV, verFOV, eyePos, center, up, portWidth, portHeight);
+		messages.push(message);
 	}
 }
 
