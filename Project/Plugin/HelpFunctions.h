@@ -19,7 +19,7 @@ inline Vertex ProcessVertex(MFnMesh& mesh, UINT polygonID, UINT vertexID, MIntAr
 
 	Vertex vertex
 	{
-		position.x, position.y, position.z,
+		position.z, position.y, position.x,
 		normal.x, normal.y, normal.z,
 		u, 1 - v
 	};
@@ -29,8 +29,8 @@ inline Vertex ProcessVertex(MFnMesh& mesh, UINT polygonID, UINT vertexID, MIntAr
 
 inline void ProcessTriangle(MFnMesh& mesh, UINT polygonID, MIntArray vertexList, UINT numVertices, std::vector<Vertex>& vertices)
 {
-	for (UINT j = 0; j < numVertices; ++j)
-		vertices.emplace_back(ProcessVertex(mesh, polygonID, j , vertexList));
+	for (UINT j = numVertices + 1; j > 0; --j)
+		vertices.emplace_back(ProcessVertex(mesh, polygonID, j -1, vertexList));
 }
 
 inline void ProcessQuad(MFnMesh& mesh, UINT polygonID, MIntArray vertexList, UINT numVertices, std::vector<Vertex>& vertices)

@@ -141,7 +141,7 @@ public:
 								message.perspectiveMatrix[10], message.perspectiveMatrix[11], message.perspectiveMatrix[12], message.perspectiveMatrix[13],
 								message.perspectiveMatrix[14], message.perspectiveMatrix[15]);*/
 
-							viewMatrix = DirectX::XMMatrixLookAtLH(Vector4(message.eyePos), Vector4(message.center), Vector3((float)message.up[0], (float)message.up[1], (float)message.up[2]));
+							viewMatrix = DirectX::XMMatrixLookAtLH(Vector4(message.eyePos[2], message.eyePos[1], message.eyePos[0], message.eyePos[3]), Vector4(message.center[2], message.center[1], message.center[0], message.center[3]), Vector3((float)message.up[2], (float)message.up[1], (float)message.up[0]));
 
 							float aspectRatio = (float)message.portWidth / message.portHeight;
 							float orthoAspectRatio = (float)message.portHeight / message.portWidth;
