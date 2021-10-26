@@ -102,7 +102,25 @@ public:
 							std::cout << "MessageType: " << (UINT)message.messageType << std::endl;
 							std::cout << "OrthoWidth: " << message.orthoWidth << std::endl;
 							std::cout << "Orthographic: " << message.orthographic << std::endl;
-							for (UINT i = 0; i < 16; i++)
+							std::cout << "NearZ: " << message.nearZ << std::endl;
+							std::cout << "FarZ: " << message.farZ << std::endl;
+							std::cout << "Vertical FOV: " << message.verFOV << std::endl;
+							std::cout << "Horizontal FOV: " << message.horFOV << std::endl;
+							std::cout << "EyePos: " << message.eyePos[0] << std::endl;
+							std::cout << "EyePos: " << message.eyePos[1] << std::endl;
+							std::cout << "EyePos: " << message.eyePos[2] << std::endl;
+							std::cout << "EyePos: " << message.eyePos[3] << std::endl;
+							std::cout << "Center: " << message.center[0] << std::endl;
+							std::cout << "Center: " << message.center[1] << std::endl;
+							std::cout << "Center: " << message.center[2] << std::endl;
+							std::cout << "Center: " << message.center[3] << std::endl;
+							std::cout << "Up: " << message.up[0] << std::endl;
+							std::cout << "Up: " << message.up[1] << std::endl;
+							std::cout << "Up: " << message.up[2] << std::endl;
+							std::cout << "PortWidth: " << message.portWidth << std::endl;
+							std::cout << "PortHeight: " << message.portHeight << std::endl;
+
+							/*for (UINT i = 0; i < 16; i++)
 							{
 								std::cout << "View Matrix: " << message.viewMatrix[i] << std::endl;
 							}
@@ -121,16 +139,20 @@ public:
 							perspectiveMatrix = Matrix(message.perspectiveMatrix[0], message.perspectiveMatrix[1], message.perspectiveMatrix[2], message.perspectiveMatrix[3], message.perspectiveMatrix[4],
 								message.perspectiveMatrix[5], message.perspectiveMatrix[6], message.perspectiveMatrix[7], message.perspectiveMatrix[8], message.perspectiveMatrix[9],
 								message.perspectiveMatrix[10], message.perspectiveMatrix[11], message.perspectiveMatrix[12], message.perspectiveMatrix[13],
-								message.perspectiveMatrix[14], message.perspectiveMatrix[15]);
+								message.perspectiveMatrix[14], message.perspectiveMatrix[15]);*/
+
+							viewMatrix = DirectX::XMMatrixLookAtLH(Vector4(message.eyePos), Vector4(message.center), Vector3((float)message.up[0], (float)message.up[1], (float)message.up[2]));
+
+							float aspectRatio = message.horFOV / message.verFOV;
 
 							if (message.orthographic)
 							{
+								perspectiveMatrix = DirectX::XMMatrixOrthographicLH(message.orthoWidth, message.orthoWidth, message.nearZ, message.farZ);
 								//perspectiveMatrix = Matrix::CreateOrthographic(message.orthoWidth, message.orthoWidth, 0.1f, 100.0f);
 							}
 							else
 							{
-								//perspectiveMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
-								//perspectiveMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
+								perspectiveMatrix = DirectX::XMMatrixPerspectiveFovLH(message.verFOV * (180 / DirectX::XM_PI), aspectRatio, message.nearZ, message.farZ);
 							}
 							
 							Matrix finalMatrix = Matrix((viewMatrix * perspectiveMatrix).Transpose());

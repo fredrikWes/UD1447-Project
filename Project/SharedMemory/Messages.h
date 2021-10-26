@@ -101,21 +101,43 @@ struct Message
 
 struct CameraChangedMessage : public Message
 {
-	float viewMatrix[16];
-	float perspectiveMatrix[16];
+	//float viewMatrix[16];
+	//float perspectiveMatrix[16];
 	bool orthographic = false;
 	double orthoWidth;
+	float nearZ;
+	float farZ;
+	float horFOV;
+	float verFOV;
+	float eyePos[4];
+	float center[4];
+	double up[3];
+	int portWidth;
+	int portHeight;
 
-	CameraChangedMessage(size_t nameLength, char* name, float vMatrix[], float pMatrix[], double orthoWidth, bool orthographic)
-		:Message(NODETYPE::CAMERA, MESSAGETYPE::CHANGED, nameLength, name), orthographic(orthographic)
+	CameraChangedMessage(size_t nameLength, char* name, double orthoWidth, bool orthographic, float nearZ, 
+						 float farZ, float horFOV, float verFOV, float eyePos[4], float center[4], double up[3],
+						 int portWidth, int portHeight)
+		:Message(NODETYPE::CAMERA, MESSAGETYPE::CHANGED, nameLength, name), orthographic(orthographic), nearZ(nearZ), farZ(farZ),
+				 horFOV(horFOV), verFOV(verFOV), portWidth(portWidth), portHeight(portHeight)
 	{
 		this->orthoWidth = orthoWidth;
 
-		for (UINT i = 0; i < 16; ++i)
+		for (UINT i = 0; i < 4; ++i)
+		{
+			this->eyePos[i] = eyePos[i];
+			this->center[i] = center[i];
+		}
+		for (UINT i = 0; i < 3; ++i)
+		{
+			this->up[i] = up[i];
+		}
+
+		/*for (UINT i = 0; i < 16; ++i)
 		{
 			this->viewMatrix[i] = vMatrix[i];
 			this->perspectiveMatrix[i] = pMatrix[i];
-		}
+		}*/
 			
 	}
 
@@ -139,16 +161,44 @@ struct CameraChangedMessage : public Message
 		strcpy_s(name, nameLength, data + location);
 		location += nameLength;
 
-		memcpy(viewMatrix, data + location, sizeof(float) * 16);
+		/*memcpy(viewMatrix, data + location, sizeof(float) * 16);
 		location += sizeof(float) * 16;
 
 		memcpy(perspectiveMatrix, data + location, sizeof(float) * 16);
-		location += sizeof(float) * 16;
+		location += sizeof(float) * 16;*/
 
 		memcpy(&orthoWidth, data + location, sizeof(double));
 		location += sizeof(double);
 
 		memcpy(&orthographic, data + location, sizeof(bool));
+		location += sizeof(bool);
+
+		memcpy(&nearZ, data + location, sizeof(float));
+		location += sizeof(float);
+
+		memcpy(&farZ, data + location, sizeof(float));
+		location += sizeof(float);
+
+		memcpy(&horFOV, data + location, sizeof(float));
+		location += sizeof(float);
+
+		memcpy(&verFOV, data + location, sizeof(float));
+		location += sizeof(float);
+
+		memcpy(eyePos, data + location, sizeof(float) * 4);
+		location += sizeof(float) * 4;
+
+		memcpy(center, data + location, sizeof(float) * 4);
+		location += sizeof(float) * 4;
+
+		memcpy(up, data + location, sizeof(double) * 3);
+		location += sizeof(double) * 3;
+
+		memcpy(&portWidth, data + location, sizeof(int));
+		location += sizeof(int);
+
+		memcpy(&portHeight, data + location, sizeof(int));
+		location += sizeof(int);
 
 	}
 
@@ -172,21 +222,49 @@ struct CameraChangedMessage : public Message
 		memcpy(data + location, name, nameLength);
 		location += nameLength;
 
-		memcpy(data + location, viewMatrix, sizeof(float) * 16);
+		/*memcpy(data + location, viewMatrix, sizeof(float) * 16);
 		location += sizeof(float) * 16;
 
 		memcpy(data + location, perspectiveMatrix, sizeof(float) * 16);
-		location += sizeof(float) * 16;
+		location += sizeof(float) * 16;*/
 
 		memcpy(data + location, &orthoWidth, sizeof(double));
 		location += sizeof(double);
 
 		memcpy(data + location, &orthographic, sizeof(bool));
+		location += sizeof(bool);
+
+		memcpy(data + location ,&nearZ, sizeof(float));
+		location += sizeof(float);
+
+		memcpy( data + location, &farZ, sizeof(float));
+		location += sizeof(float);
+
+		memcpy(data + location, &horFOV, sizeof(float));
+		location += sizeof(float);
+
+		memcpy(data + location, &verFOV, sizeof(float));
+		location += sizeof(float);
+
+		memcpy(data + location, eyePos, sizeof(float) * 4);
+		location += sizeof(float) * 4;
+
+		memcpy(data + location, center, sizeof(float) * 4);
+		location += sizeof(float) * 4;
+
+		memcpy(data + location, up, sizeof(double) * 3);
+		location += sizeof(double) * 3;
+
+		memcpy(data + location, &portWidth, sizeof(int));
+		location += sizeof(int);
+
+		memcpy(data + location, &portHeight, sizeof(int));
+		location += sizeof(int);
 
 		return data;
 	}
 
-	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + sizeof(float) * 16 +  sizeof(float) * 16 + sizeof(double) + sizeof(bool); return messageSize; }
+	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + /*sizeof(float) * 16 +  sizeof(float) * 16 +*/ sizeof(double) + sizeof(bool) + sizeof(float) + sizeof(float) + sizeof(float) + sizeof(float) + sizeof(float) * 4 + sizeof(float) * 4 + sizeof(double) * 3 + sizeof(int) + sizeof(int); return messageSize; }
 };
 
 struct MeshChangedMessage : public Message
