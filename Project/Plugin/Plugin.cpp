@@ -89,6 +89,7 @@ bool SendMessage(Message* message)
 		}
 	}
 
+	delete message;
 	return sent;
 }
 
@@ -139,8 +140,7 @@ void NotifyTransformChanged(const MObject& node)
 		}
 	}
 
-	Message* message = new TransformChangedMessage(dagNode.name().numChars(), (char*)dagNode.name().asChar(), matrixArr);
-	messages.push(message);
+	SendMessage(new TransformChangedMessage(dagNode.name().numChars(), (char*)dagNode.name().asChar(), matrixArr));
 
 	for (UINT i = 0; i < dagNode.childCount(); ++i)
 		NotifyTransformChanged(dagNode.child(i));
@@ -201,8 +201,7 @@ void CameraChanged(const MString& str, void* clientData)
 			}
 		}
 
-		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), viewMatrixArr, perspMatrixArr, orthoWidth, camera.isOrtho());
-		messages.push(message);
+		SendMessage(new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), viewMatrixArr, perspMatrixArr, orthoWidth, camera.isOrtho()));
 	}
 }
 
@@ -247,8 +246,7 @@ void MeshChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPl
 
 		cout << "\n============================= GEOMETRY CHANGED =============================" << endl;
 		cout << nodeName << endl;
-		MeshChangedMessage* message = new MeshChangedMessage(NODETYPE::MESH, MESSAGETYPE::CHANGED, nodeName.numChars(), (char*)nodeName.asChar(), indices.data(), indices.size(), vertices.data(), vertices.size(), vertexCache[mesh.name().asChar()].size());
-		messages.push(message);
+		SendMessage(new MeshChangedMessage(NODETYPE::MESH, MESSAGETYPE::CHANGED, nodeName.numChars(), (char*)nodeName.asChar(), indices.data(), indices.size(), vertices.data(), vertices.size(), vertexCache[mesh.name().asChar()].size()));
 	}
 }
 
@@ -267,7 +265,7 @@ void NodeAdded(MObject& node, void* clientData)
 		{
 			found = true;
 			nodeName = MFnDependencyNode(MFnDagNode(node).parent(0)).name();
-			messages.push(new Message(NODETYPE::MESH, MESSAGETYPE::ADDED, nodeName.numChars(), (char*)nodeName.asChar()));
+			SendMessage(new Message(NODETYPE::MESH, MESSAGETYPE::ADDED, nodeName.numChars(), (char*)nodeName.asChar()));
 			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MeshChanged, NULL, &status));
 			break;
 		}
@@ -309,18 +307,13 @@ void NodeRemoved(MObject& node, void* clientData)
 	switch (node.apiType())
 	{
 	case MFn::Type::kMesh:
-		found = true;
 		nodeName = MFnDependencyNode(MFnDagNode(node).parent(0)).name();
-		messages.push(new Message(NODETYPE::MESH, MESSAGETYPE::REMOVED, nodeName.numChars(), (char*)nodeName.asChar()));
+		SendMessage(new Message(NODETYPE::MESH, MESSAGETYPE::REMOVED, nodeName.numChars(), (char*)nodeName.asChar()));
 		break;
 
 	case MFn::Type::kPhong:
-		found = true;
 		break;
 	}
-
-	if (!found)
-		return;
 
 	cout << "\n============================= NODE REMOVED =============================" << endl;
 	cout << "REMOVED NODE: " << nodeName << endl;
@@ -329,12 +322,12 @@ void NodeRemoved(MObject& node, void* clientData)
 //TIMER
 void TimerCallback(float elapsedTime, float lastTime, void* clientData)
 {
-	if (!messages.empty())
-	{
-		bool sent = SendMessage(messages.front());
-		if (sent)
-			messages.pop();
-	}
+	//if (!messages.empty())
+	//{
+	//	bool sent = SendMessage(messages.front());
+	//	if (sent)
+	//		messages.pop();
+	//}
 }
 
 //INITIALIZE
