@@ -13,16 +13,6 @@ double timeElapsed = 0;
 
 SharedMemory memory;
 
-queue<Message*> messages;
-
-chrono::high_resolution_clock timer;
-chrono::high_resolution_clock::time_point lastCameraUpdate;
-chrono::high_resolution_clock::time_point lastTransformUpdate;
-chrono::high_resolution_clock::time_point lastMeshUpdate;
-
-int numSkipped = 0;
-int numPassed = 0;
-
 #undef SendMessage
 
 bool SendMessage(Message* message)
@@ -105,22 +95,98 @@ bool SendMessage(Message* message)
 //MATERIAL CHANGED
 void MaterialChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug, void *clientData)
 {
-	if (msg & MNodeMessage::AttributeMessage::kAttributeSet)
+	if (plug.node().apiType() == MFn::Type::kLambert)
 	{
-		cout << "\n============================= MATERIAL CHANGED =============================" << endl;
-		cout << plug.name() << endl;
+		MFnLambertShader shader(plug.node(), &status);
+		if (status != MS::kSuccess)
+			return;
 
-		//MFnPhongShader shader(plug.node());
-		//cout << shader.absoluteName() << endl;
+		MFnDependencyNode depNode(plug.node(), &status);
+		if (status != MS::kSuccess)
+			return;
+
+		cout << "\n============================= MATERIAL CHANGED =============================" << endl;
+		MPlug colorPlug = shader.findPlug("color", true, &status);
+		if (status != MS::kSuccess)
+			return;
+
+		if (!colorPlug.isNull(&status))
+		{
+			if (status != MS::kSuccess)
+				return;
+			cout << shader.color() << endl;
+		}
+		if (status != MS::kSuccess)
+			return;
+
+		colorPlug = depNode.findPlug("color", true, &status);
+		if (status != MS::kSuccess)
+			return;
+
+		MPlugArray colorConnections;
+		colorPlug.connectedTo(colorConnections, true, false, &status);
+		if (status != MS::kSuccess)
+			return;
+
+		for (UINT i = 0; i < colorConnections.length(); ++i)
+		{
+			cout << colorConnections[i].name() << endl;
+
+			if (colorConnections[i].node().hasFn(MFn::kFileTexture))
+			{
+				MFnDependencyNode texture(colorConnections[i].node());
+				MPlug texturePlug = texture.findPlug("fileTextureName", true);
+				MString path;
+				texturePlug.getValue(path);
+				cout << path << endl;
+			}
+		}
 	}
 
-	if (msg & MNodeMessage::AttributeMessage::kConnectionMade || msg & MNodeMessage::AttributeMessage::kConnectionBroken)
+	if (plug.node().apiType() == MFn::Type::kFileTexture && msg & MNodeMessage::AttributeMessage::kAttributeSet)
 	{
-		cout << "\n============================= MATERIAL TEXTURE CONNECTION CHANGED =============================" << endl;
-		cout << plug.name() << endl;
+		MFnDependencyNode depNode(plug.node(), &status);
+		if (status != MS::kSuccess)
+			return;
 
-		//MFnPhongShader shader(plug.node());
-		//cout << shader.absoluteName() << endl;
+		MPlug texturePlug = depNode.findPlug("fileTextureName", true, &status);
+		if (status != MS::kSuccess)
+			return;
+
+		MString path;
+		status = texturePlug.getValue(path);
+		if (status != MS::kSuccess || path == "")
+			return;
+
+		//FIND CONNECTED SHADERS
+		MPlugArray connections;
+		status = depNode.getConnections(connections);
+		if (status != MS::kSuccess || path == "")
+			return;
+
+		cout << "\n============================= TEXTURE CHANGED =============================" << endl;
+		cout << path << endl;
+
+		for (UINT i = 0; i < connections.length(); ++i)
+		{
+			if (string(connections[i].name().asChar()).find("outColor") != string::npos)
+			{
+				cout << "FOUND OUT COLOR" << endl;
+				cout << connections[i].node().apiTypeStr() << endl;
+
+				MFnDependencyNode outColor(connections[i]);
+
+				MPlugArray colorConnections;
+				status = outColor.getConnections(colorConnections);
+				if (status != MS::kSuccess || path == "")
+					return;
+
+				for (UINT i = 0; i < colorConnections.length(); ++i)
+				{
+					cout << colorConnections[i].name() << endl;
+				}
+			}
+		}
 	}
 }
 
@@ -152,43 +218,21 @@ void NotifyTransformChanged(const MObject& node)
 		}
 	}
 
-	Message* message = new TransformChangedMessage(dagNode.name().numChars(), (char*)dagNode.name().asChar(), matrixArr);
-	messages.push(message);
+	SendMessage(new TransformChangedMessage(dagNode.name().numChars(), (char*)dagNode.name().asChar(), matrixArr));
 
 	for (UINT i = 0; i < dagNode.childCount(); ++i)
 		NotifyTransformChanged(dagNode.child(i));
 }
 
 void TransformChanged(MObject& node, MDagMessage::MatrixModifiedFlags& modified, void* clientData)
-{
-	//if (true)
-	//{
-	//	cout << "======================================" << endl;
-	//	cout << "NUM PASSED: " << numPassed << endl;
-	//	cout << "NUM SKIPPED: " << numSkipped << endl;
-	//}
-
-	//auto secondsSinceUpdate = chrono::duration_cast<chrono::milliseconds>(timer.now() - lastTransformUpdate).count();
-	//if (secondsSinceUpdate < 17.0)
-	//{
-	//	numSkipped++;
-	//	return;
-	//}
-		
+{	
 	cout << "\n============================= TRANSFORM CHANGED =============================" << endl;
 	cout << MFnDependencyNode(node, &status).name() << endl;
 	NotifyTransformChanged(node);
-
-	lastTransformUpdate = timer.now();
-	numPassed++;
 }
 
 void CameraChanged(const MString& str, void* clientData)
 {
-	auto secondsSinceUpdate = chrono::duration_cast<chrono::milliseconds>(timer.now() - lastCameraUpdate).count();
-	if (secondsSinceUpdate < 17.0)
-		return;
-
 	MString cmd = "getPanel -wf";
 	MString activePanel = MGlobal::executeCommandStringResult(cmd);
 
@@ -228,10 +272,7 @@ void CameraChanged(const MString& str, void* clientData)
 		int portWidth = currentView.portWidth();
 		int portHeight = currentView.portHeight();
 
-		Message* message = new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), orthoWidth, camera.isOrtho(), nearZ, farZ, horFOV, verFOV, eyePos, center, up, portWidth, portHeight);
-		messages.push(message);
-
-		lastCameraUpdate = timer.now();
+		SendMessage(new CameraChangedMessage(camera.name().numChars(), (char*)camera.name().asChar(), orthoWidth, camera.isOrtho(), nearZ, farZ, horFOV, verFOV, eyePos, center, up, portWidth, portHeight));
 	}
 }
 
@@ -252,8 +293,7 @@ void MeshChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPl
 		return;
 
 	if (plugInfo.find(".instObjGroups") != std::string::npos)
-	{
-		cout << "\n============================= MATERIAL CONNECTION CHANGED =============================" << endl;
+	{	
 		MDagPath path;
 		status = mesh.getPath(path);
 		if (status != MS::kSuccess)
@@ -261,10 +301,38 @@ void MeshChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPl
 
 		int inst = 0;
 		if (path.isInstanced())
-			inst = path.instanceNumber();
+			inst = path.instanceNumber(&status);
+		if (status != MS::kSuccess)
+			return;
 
 		MObjectArray shaders;
 		MIntArray indices;
+
+		status = mesh.getConnectedShaders(inst, shaders, indices);
+		if (status != MS::kSuccess)
+			return;
+
+		if (indices.length() > 0)
+		{
+			if (indices[0] != -1)
+			{
+				MPlug shaderPlug = MFnDependencyNode(shaders[0]).findPlug("surfaceShader", true, &status);
+				if (status != MS::kSuccess)
+					return;
+
+				MPlugArray plugs;
+				shaderPlug.connectedTo(plugs, true, false, &status);
+				if (status != MS::kSuccess)
+					return;
+
+				MFnDependencyNode surfaceShader(plugs[0].node(), &status);
+				if (status != MS::kSuccess)
+					return;
+
+				cout << "\n============================= MATERIAL CONNECTION CHANGED =============================" << endl;
+				cout << "APPLIED MATERIAL: " << surfaceShader.name() << endl;
+			}
+		}
 	}
 
 	if (msg & MNodeMessage::AttributeMessage::kAttributeEval && plugInfo.find(".outMesh") != std::string::npos)
@@ -276,8 +344,7 @@ void MeshChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPl
 
 		cout << "\n============================= GEOMETRY CHANGED =============================" << endl;
 		cout << nodeName << endl;
-		Message* message = new MeshChangedMessage(NODETYPE::MESH, MESSAGETYPE::CHANGED, nodeName.numChars(), (char*)nodeName.asChar(), indices.data(), indices.size(), vertices.data(), vertices.size(), vertexCache[mesh.name().asChar()].size());
-		messages.push(message);
+		SendMessage(new MeshChangedMessage(NODETYPE::MESH, MESSAGETYPE::CHANGED, nodeName.numChars(), (char*)nodeName.asChar(), indices.data(), indices.size(), vertices.data(), vertices.size(), vertexCache[mesh.name().asChar()].size()));;
 	}
 }
 
@@ -296,8 +363,7 @@ void NodeAdded(MObject& node, void* clientData)
 		{
 			found = true;
 			nodeName = MFnDependencyNode(MFnDagNode(node).parent(0)).name();
-			Message* message = new Message(NODETYPE::MESH, MESSAGETYPE::ADDED, nodeName.numChars(), (char*)nodeName.asChar());
-			messages.push(message);
+			SendMessage(new Message(NODETYPE::MESH, MESSAGETYPE::ADDED, nodeName.numChars(), (char*)nodeName.asChar()));
 			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MeshChanged, NULL, &status));
 			break;
 		}
@@ -312,9 +378,19 @@ void NodeAdded(MObject& node, void* clientData)
 			break;
 		}
 
-		case MFn::Type::kPhong:
+		case MFn::Type::kLambert:
 		{
 			found = true;
+			cout << nodeName << endl;
+			SendMessage(new Message(NODETYPE::MATERIAL, MESSAGETYPE::ADDED, nodeName.numChars(), (char*)nodeName.asChar()));
+			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MaterialChanged, NULL, &status));
+			break;
+		}
+
+		case MFn::Type::kFileTexture:
+		{
+			found = true;
+			cout << nodeName << endl;
 			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MaterialChanged, NULL, &status));
 			break;
 		}
@@ -340,30 +416,25 @@ void NodeRemoved(MObject& node, void* clientData)
 	{
 		case MFn::Type::kMesh:
 		{
+			found = true;
 			nodeName = MFnDependencyNode(MFnDagNode(node).parent(0)).name();
-			Message* message = new Message(NODETYPE::MESH, MESSAGETYPE::REMOVED, nodeName.numChars(), (char*)nodeName.asChar());
-			messages.push(message);
+			SendMessage(new Message(NODETYPE::MESH, MESSAGETYPE::REMOVED, nodeName.numChars(), (char*)nodeName.asChar()));
 			break;
 		}
-		
 
-		case MFn::Type::kPhong:
+		case MFn::Type::kLambert:
+		{
+			found = true;
 			break;
+		}
+			
 	}
+
+	if (!found)
+		return;
 
 	cout << "\n============================= NODE REMOVED =============================" << endl;
 	cout << "REMOVED NODE: " << nodeName << endl;
-}
-
-//TIMER
-void TimerCallback(float elapsedTime, float lastTime, void* clientData)
-{
-	if (!messages.empty())
-	{
-		bool sent = SendMessage(messages.front());
-		if (sent)
-			messages.pop();
-	}
 }
 
 //INITIALIZE
@@ -405,10 +476,6 @@ EXPORT MStatus initializePlugin(MObject obj)
 		return status;
 
 	callbackIdArray.append(MDGMessage::addNodeRemovedCallback(NodeRemoved, "dependNode", NULL, &status));
-	if (status != MS::kSuccess)
-		return status;
-
-	callbackIdArray.append(MTimerMessage::addTimerCallback(0.001, TimerCallback, NULL, &status));
 	if (status != MS::kSuccess)
 		return status;
 
