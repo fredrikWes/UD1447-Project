@@ -100,8 +100,27 @@ public:
 					TransformChangedMessage message = TransformChangedMessage(data);
 
 					if (nodes.find(message.name) != nodes.end())
-						std::dynamic_pointer_cast<Mesh>(nodes[message.name])->matrix = Matrix(message.matrix);
+					{
+						Matrix matrix(message.matrix);
 
+						Vector3 translation;
+						Vector3 scale;
+						Quaternion rotation;
+						matrix.Decompose(scale, rotation, translation);
+
+						std::swap(translation.x, translation.z);
+						std::swap(scale.x, scale.z);
+						std::swap(rotation.x, rotation.z);
+
+						rotation.x *= -1;
+						rotation.y *= -1;
+						rotation.z *= -1;
+
+						matrix = Matrix::CreateScale(scale) * Matrix::CreateFromQuaternion(rotation) * Matrix::CreateTranslation(translation);
+
+						std::dynamic_pointer_cast<Mesh>(nodes[message.name])->matrix = matrix;
+					}
+						
 					break;
 				}
 

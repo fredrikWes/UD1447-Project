@@ -8,7 +8,7 @@ private:
 	//MESHES TO RENDER
 	std::map<std::string, std::shared_ptr<Mesh>> meshes;
 
-	//BUFFER(S)
+	//BUFFERS
 	ID3D11Buffer* matricesBuffer = nullptr;
 	struct Matrices
 	{
@@ -16,18 +16,23 @@ private:
 		Matrix viewPerspective;
 	} matrices;
 
+	ID3D11Buffer* colorBuffer = nullptr;
+
 	//SHADER PATHS
 #ifdef _DEBUG
 	const std::string vs_path = "../x64/Debug/VertexShader.cso";
 	const std::string ps_path = "../x64/Debug/PixelShader.cso";
+	const std::string color_ps_path = "../x64/Debug/ColorPixelShader.cso";
 #else
 	const std::string vs_path = "../x64/Release/VertexShader.cso";
 	const std::string ps_path = "../x64/Release/PixelShader.cso";
+	const std::string color_ps_path = "../x64/Release/ColorPixelShader.cso";
 #endif
 
 	//SHADERS
 	ID3D11VertexShader* vertexShader = nullptr;
 	ID3D11PixelShader* pixelShader = nullptr;
+	ID3D11PixelShader* colorPixelShader = nullptr;
 
 	//INPUT LAYOUT
 	ID3D11InputLayout* inputLayout = nullptr;
@@ -42,6 +47,10 @@ public:
 		if (!result)
 			return;
 
+		result = Graphics::CreateConstantBuffer(colorBuffer);
+		if (!result)
+			return;
+
 		//SHADERS
 		std::string byteCode;
 		result = Graphics::CreateShader(vertexShader, vs_path, byteCode);
@@ -49,6 +58,10 @@ public:
 			return;
 
 		result = Graphics::CreateShader(pixelShader, ps_path);
+		if (!result)
+			return;
+
+		result = Graphics::CreateShader(colorPixelShader, color_ps_path);
 		if (!result)
 			return;
 
@@ -66,14 +79,16 @@ public:
 		//BINDINGS
 		Graphics::BindInputLayout(inputLayout);
 		Graphics::BindConstantBuffer(matricesBuffer);
+		Graphics::BindConstantBuffer(colorBuffer, Shader::PS, 1);
+		Graphics::BindShaders(vertexShader, colorPixelShader);
 		Graphics::SetTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		Graphics::BindShaders(vertexShader, pixelShader);
 
 		std::cout << ">>> SUCCEDDED TO INITIALIZE RENDERER <<<" << std::endl;
 	}
 
 	~Renderer()
 	{
+		colorBuffer->Release();
 		matricesBuffer->Release();
 		vertexShader->Release();
 		pixelShader->Release();
@@ -91,8 +106,20 @@ public:
 			Graphics::UpdateConstantBuffer(matricesBuffer, matrices);
 
 			if (mesh->material)
+			{
 				if (mesh->material->texture)
+				{
 					mesh->material->texture->Bind();
+					Graphics::BindShaders(vertexShader, pixelShader);
+				}
+					
+				else
+				{
+					Graphics::UpdateConstantBuffer(colorBuffer, mesh->material->color);
+					Graphics::BindShaders(vertexShader, colorPixelShader);
+				}
+			}
+				
 			mesh->Draw();
 		}
 	}
