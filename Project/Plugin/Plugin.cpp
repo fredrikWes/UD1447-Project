@@ -66,6 +66,7 @@ bool SendMessage(Message* message)
 				cout << transformChanged->name << endl;
 				cout << transformChanged->matrix[0] << endl;
 			}
+			break;
 		}
 
 		case NODETYPE::CAMERA:
@@ -73,18 +74,47 @@ bool SendMessage(Message* message)
 			if (message->messageType == MESSAGETYPE::CHANGED)
 			{
 				auto cameraChanged = static_cast<CameraChangedMessage*>(message);
-				cout << cameraChanged->Size() << " " << cameraChanged->name << endl;
 				data = cameraChanged->Data();
 				sent = memory.Send(data, cameraChanged->Size());
-				if (sent)
+				/*if (sent)
 				{
 					cout << "---SENT CAMERA CHANGED MESSAGE---" << endl;
 					cout << cameraChanged->name << endl;
 					cout << cameraChanged->orthoWidth << endl;
-				}
+				}*/
 					
 				delete data;
 			}
+			break;
+		}
+
+		case NODETYPE::MATERIAL:
+		{
+			if (message->messageType == MESSAGETYPE::CHANGED)
+			{
+				auto materialChanged = static_cast<MaterialChangedMessage*>(message);
+				data = materialChanged->Data();
+				memory.Send(data, materialChanged->Size());
+				delete data;
+			}
+
+			else if (message->messageType == MESSAGETYPE::ADDED || message->messageType == MESSAGETYPE::REMOVED)
+			{
+				data = message->Data();
+				memory.Send(data, message->Size());
+				delete data;
+			}
+
+			break;
+		}
+
+		case NODETYPE::MATERIALCONNECTION:
+		{
+			auto materialConnection = static_cast<MaterialConnectionMessage*>(message);
+			data = materialConnection->Data();
+			memory.Send(data, materialConnection->Size());
+			delete data;
+			break;
 		}
 	}
 
@@ -95,7 +125,7 @@ bool SendMessage(Message* message)
 //MATERIAL CHANGED
 void MaterialChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug, void *clientData)
 {
-	if (plug.node().apiType() == MFn::Type::kLambert)
+	if (plug.node().apiType() == MFn::Type::kLambert && string(plug.info().asChar()).find("color") != string::npos)
 	{
 		MFnLambertShader shader(plug.node(), &status);
 		if (status != MS::kSuccess)
@@ -105,7 +135,6 @@ void MaterialChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &oth
 		if (status != MS::kSuccess)
 			return;
 
-		cout << "\n============================= MATERIAL CHANGED =============================" << endl;
 		MPlug colorPlug = shader.findPlug("color", true, &status);
 		if (status != MS::kSuccess)
 			return;
@@ -114,8 +143,8 @@ void MaterialChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &oth
 		{
 			if (status != MS::kSuccess)
 				return;
-			cout << shader.color() << endl;
 		}
+
 		if (status != MS::kSuccess)
 			return;
 
@@ -128,64 +157,36 @@ void MaterialChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &oth
 		if (status != MS::kSuccess)
 			return;
 
-		for (UINT i = 0; i < colorConnections.length(); ++i)
-		{
-			cout << colorConnections[i].name() << endl;
-
-			if (colorConnections[i].node().hasFn(MFn::kFileTexture))
-			{
-				MFnDependencyNode texture(colorConnections[i].node());
-				MPlug texturePlug = texture.findPlug("fileTextureName", true);
-				MString path;
-				texturePlug.getValue(path);
-				cout << path << endl;
-			}
-		}
+		if (colorConnections.length() != 0)
+			return;
+	
+		cout << "\n============================= MATERIAL CHANGED =============================" << endl;
+		cout << shader.name() << endl;
+		cout << shader.color() << endl;
+		float color[3];
+		shader.color().get(color);
+		SendMessage(new MaterialChangedMessage(shader.name().numChars(), (char*)shader.name().asChar(), 0, nullptr, color));
 	}
 
-	if (plug.node().apiType() == MFn::Type::kFileTexture && msg & MNodeMessage::AttributeMessage::kAttributeSet)
+	if (plug.node().apiType() == MFn::Type::kFileTexture && 
+		msg & MNodeMessage::AttributeMessage::kAttributeSet && 
+		string(plug.info().asChar()).find("fileTextureName") != string::npos)
 	{
-		MFnDependencyNode depNode(plug.node(), &status);
-		if (status != MS::kSuccess)
-			return;
-
-		MPlug texturePlug = depNode.findPlug("fileTextureName", true, &status);
-		if (status != MS::kSuccess)
-			return;
-
-		MString path;
-		status = texturePlug.getValue(path);
-		if (status != MS::kSuccess || path == "")
-			return;
+		MPlug outColorPlug = MFnDependencyNode(plug.node()).findPlug("outColor", true);
 
 		//FIND CONNECTED SHADERS
 		MPlugArray connections;
-		status = depNode.getConnections(connections);
-		if (status != MS::kSuccess || path == "")
-			return;
-
+		outColorPlug.connectedTo(connections, false, true);
+	
 		cout << "\n============================= TEXTURE CHANGED =============================" << endl;
-		cout << path << endl;
-
 		for (UINT i = 0; i < connections.length(); ++i)
 		{
-			if (string(connections[i].name().asChar()).find("outColor") != string::npos)
-			{
-				cout << "FOUND OUT COLOR" << endl;
-				cout << connections[i].node().apiTypeStr() << endl;
-
-				MFnDependencyNode outColor(connections[i]);
-
-				MPlugArray colorConnections;
-				status = outColor.getConnections(colorConnections);
-				if (status != MS::kSuccess || path == "")
-					return;
-
-				for (UINT i = 0; i < colorConnections.length(); ++i)
-				{
-					cout << colorConnections[i].name() << endl;
-				}
-			}
+			string fullName = connections[i].name().asChar();
+			MString shader = fullName.substr(0, fullName.find_first_of('.')).c_str();
+			cout << plug.asString() << endl;
+			cout << shader << endl;
+			float color[4] = { 0,0,0,0 };
+			SendMessage(new MaterialChangedMessage(shader.numChars(), (char*)shader.asChar(), plug.asString().numChars(), (char*)plug.asString().asChar(), color));
 		}
 	}
 }
@@ -331,6 +332,7 @@ void MeshChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPl
 
 				cout << "\n============================= MATERIAL CONNECTION CHANGED =============================" << endl;
 				cout << "APPLIED MATERIAL: " << surfaceShader.name() << endl;
+				SendMessage(new MaterialConnectionMessage(nodeName.numChars(), (char*)nodeName.asChar(), surfaceShader.name().numChars(), (char*)surfaceShader.name().asChar()));
 			}
 		}
 	}
@@ -381,7 +383,6 @@ void NodeAdded(MObject& node, void* clientData)
 		case MFn::Type::kLambert:
 		{
 			found = true;
-			cout << nodeName << endl;
 			SendMessage(new Message(NODETYPE::MATERIAL, MESSAGETYPE::ADDED, nodeName.numChars(), (char*)nodeName.asChar()));
 			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MaterialChanged, NULL, &status));
 			break;
@@ -389,8 +390,7 @@ void NodeAdded(MObject& node, void* clientData)
 
 		case MFn::Type::kFileTexture:
 		{
-			found = true;
-			cout << nodeName << endl;
+			found = true;;
 			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MaterialChanged, NULL, &status));
 			break;
 		}

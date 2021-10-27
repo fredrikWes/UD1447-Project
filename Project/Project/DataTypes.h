@@ -3,11 +3,43 @@
 #include "Graphics.h"
 #include "Texture.h"
 #include <vector>
+#include "Math.h"
 
 struct Node
 {
 	std::string name = "";
+
 	virtual void Update() {}
+};
+
+struct Material : public Node
+{
+	Vector3 color;
+	Texture* texture = nullptr;
+
+	Material(const Message& message)
+	{
+		name = message.name;
+	}
+
+	~Material()
+	{
+		if (texture)
+			delete texture;
+	}
+
+	void Update(const MaterialChangedMessage& message)
+	{
+		if (message.filePathLength != 1)
+		{
+			if (texture)
+				delete texture;
+			texture = new Texture(message.filePath);
+		}
+
+		else
+			color = Vector3(message.color);
+	}
 };
 
 struct Mesh : public Node
@@ -20,7 +52,7 @@ struct Mesh : public Node
 	static const UINT stride = sizeof(Vertex);
 	static const UINT offset = 0;
 
-	//MATERIAL
+	std::shared_ptr<Material> material;
 
 	Mesh(const Message& message);
 	~Mesh() { if (vertexBuffer) vertexBuffer->Release(); }

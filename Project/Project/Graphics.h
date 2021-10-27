@@ -17,10 +17,12 @@ private:
 	static ID3D11RenderTargetView* backBuffer;
 	static ID3D11Texture2D* dsTexture;
 	static ID3D11DepthStencilView* dsView;
+	static ID3D11SamplerState* sampler;
 
 	static HRESULT CreateDeviceSwapchain(UINT clientWidth, UINT clientHeight, HWND hWnd);
 	static HRESULT CreateRenderTarget();
 	static HRESULT CreateDepthStencil(UINT clientWidth, UINT clientHeight);
+	static HRESULT CreateSampler();
 	static void CreateViewport(UINT clientWidth, UINT clientHeight);
 public:
 	static bool Initialize(UINT clientWidth, UINT clientHeight, HWND hWnd);
@@ -49,6 +51,7 @@ public:
 
 	//SHADER RESOURCE
 	static bool CreateShaderResourceView(ID3D11ShaderResourceView*& srv, const D3D11_SHADER_RESOURCE_VIEW_DESC* desc, ID3D11Resource* resource);
+	static void BindShaderResourceView(ID3D11ShaderResourceView* srv, Shader shader = Shader::PS, UINT slot = 0);
 
 	//INPUT LAYOUT
 	static bool CreateInputLayout(ID3D11InputLayout*& inputLayout, const D3D11_INPUT_ELEMENT_DESC* desc, UINT numElements, std::string byteCode);
@@ -73,6 +76,7 @@ inline IDXGISwapChain* Graphics::swapChain;
 inline ID3D11RenderTargetView* Graphics::backBuffer;
 inline ID3D11Texture2D* Graphics::dsTexture;
 inline ID3D11DepthStencilView* Graphics::dsView;
+inline ID3D11SamplerState* Graphics::sampler;
 
 template<typename T>
 inline bool Graphics::UpdateConstantBuffer(ID3D11Buffer*& buffer, const T& data)

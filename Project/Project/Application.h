@@ -98,7 +98,6 @@ public:
 				case NODETYPE::TRANSFORM:
 				{
 					TransformChangedMessage message = TransformChangedMessage(data);
-					std::cout << "TRANSFORM MESSAGE RECIEVED, SIZE: " << message.messageSize << std::endl;
 
 					if (nodes.find(message.name) != nodes.end())
 						std::dynamic_pointer_cast<Mesh>(nodes[message.name])->matrix = Matrix(message.matrix);
@@ -111,32 +110,8 @@ public:
 					if (msg->messageType == MESSAGETYPE::CHANGED)
 					{
 						CameraChangedMessage message = CameraChangedMessage(data);
-						std::cout << "CAMERA MESSAGE RECIEVED, SIZE: " << message.messageSize << std::endl;
 
 						Matrix viewMatrix, perspectiveMatrix;
-
-						/*std::cout << "Name: " << message.name << std::endl;
-						std::cout << "Messagelenth: " << message.messageSize << std::endl;
-						std::cout << "MessageType: " << (UINT)message.messageType << std::endl;
-						std::cout << "OrthoWidth: " << message.orthoWidth << std::endl;
-						std::cout << "Orthographic: " << message.orthographic << std::endl;
-						std::cout << "NearZ: " << message.nearZ << std::endl;
-						std::cout << "FarZ: " << message.farZ << std::endl;
-						std::cout << "Vertical FOV: " << message.verFOV << std::endl;
-						std::cout << "Horizontal FOV: " << message.horFOV << std::endl;
-						std::cout << "EyePos: " << message.eyePos[0] << std::endl;
-						std::cout << "EyePos: " << message.eyePos[1] << std::endl;
-						std::cout << "EyePos: " << message.eyePos[2] << std::endl;
-						std::cout << "EyePos: " << message.eyePos[3] << std::endl;
-						std::cout << "Center: " << message.center[0] << std::endl;
-						std::cout << "Center: " << message.center[1] << std::endl;
-						std::cout << "Center: " << message.center[2] << std::endl;
-						std::cout << "Center: " << message.center[3] << std::endl;
-						std::cout << "Up: " << message.up[0] << std::endl;
-						std::cout << "Up: " << message.up[1] << std::endl;
-						std::cout << "Up: " << message.up[2] << std::endl;
-						std::cout << "PortWidth: " << message.portWidth << std::endl;
-						std::cout << "PortHeight: " << message.portHeight << std::endl;*/
 
 						viewMatrix = DirectX::XMMatrixLookAtLH(Vector4(message.eyePos[2], message.eyePos[1], message.eyePos[0], message.eyePos[3]),
 							Vector4(message.center[2], message.center[1], message.center[0], message.center[3]),
@@ -158,6 +133,35 @@ public:
 						renderer->UpdateCameraMatrix(finalMatrix);
 					}
 
+					break;
+				}
+
+				case NODETYPE::MATERIAL:
+				{
+					if (msg->messageType == MESSAGETYPE::CHANGED)
+					{
+						MaterialChangedMessage message(data);
+						std::dynamic_pointer_cast<Material>(nodes[message.name])->Update(message);
+					}
+
+					else if (msg->messageType == MESSAGETYPE::ADDED)
+					{
+						auto material = std::make_shared<Material>(*msg);
+						nodes[material->name] = material;
+					}
+
+					else if (msg->messageType == MESSAGETYPE::REMOVED)
+					{
+				
+					}
+					break;
+				}
+
+				case NODETYPE::MATERIALCONNECTION:
+				{
+					MaterialConnectionMessage message(data);
+					if (nodes.find(message.name) != nodes.end())
+						std::dynamic_pointer_cast<Mesh>(nodes[message.name])->material = std::dynamic_pointer_cast<Material>(nodes[message.materialName]);
 					break;
 				}
 

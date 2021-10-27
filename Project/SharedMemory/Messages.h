@@ -1,28 +1,6 @@
 #pragma once
-enum class NODETYPE { MESH, DIRECTIONALLIGHT, CAMERA, MATERIAL, TRANSFORM, MATERIALCONNECTION };
+enum class NODETYPE { MESH, CAMERA, MATERIAL, TRANSFORM, MATERIALCONNECTION };
 enum class MESSAGETYPE { ADDED, REMOVED, CHANGED, NAMECHANGE };
-
-//BEHÖVS EJ?
-//enum class ATTRIBUTETYPE { GEOMETRY, TEXTURE, COLOR };
-
-//------CASES------
-//MESH ADDED
-//MESH REMOVED
-//MESH CHANGED
-
-//TRANSFORM CHANGED
-
-//DIRECTIONALLIGHT ADDED
-//DIRECTIONALLIGHT REMOVED
-//DIRECTIONALLIGHT CHANGED
-
-//CAMERA ADDED
-//CAMERA REMOVED
-//CAMERA CHANGED
-
-//MATERIAL ADDED
-//MATERIAL REMOVED
-//MATERIAL CHANGED
 
 struct Vertex
 {
@@ -126,17 +104,11 @@ struct CameraChangedMessage : public Message
 			this->eyePos[i] = eyePos[i];
 			this->center[i] = center[i];
 		}
+
 		for (UINT i = 0; i < 3; ++i)
 		{
 			this->up[i] = up[i];
-		}
-
-		/*for (UINT i = 0; i < 16; ++i)
-		{
-			this->viewMatrix[i] = vMatrix[i];
-			this->perspectiveMatrix[i] = pMatrix[i];
-		}*/
-			
+		}	
 	}
 
 	CameraChangedMessage(char* data)
@@ -158,12 +130,6 @@ struct CameraChangedMessage : public Message
 		name = new char[nameLength];
 		strcpy_s(name, nameLength, data + location);
 		location += nameLength;
-
-		/*memcpy(viewMatrix, data + location, sizeof(float) * 16);
-		location += sizeof(float) * 16;
-
-		memcpy(perspectiveMatrix, data + location, sizeof(float) * 16);
-		location += sizeof(float) * 16;*/
 
 		memcpy(&orthoWidth, data + location, sizeof(double));
 		location += sizeof(double);
@@ -219,12 +185,6 @@ struct CameraChangedMessage : public Message
 
 		memcpy(data + location, name, nameLength);
 		location += nameLength;
-
-		/*memcpy(data + location, viewMatrix, sizeof(float) * 16);
-		location += sizeof(float) * 16;
-
-		memcpy(data + location, perspectiveMatrix, sizeof(float) * 16);
-		location += sizeof(float) * 16;*/
 
 		memcpy(data + location, &orthoWidth, sizeof(double));
 		location += sizeof(double);
@@ -425,4 +385,153 @@ struct TransformChangedMessage : public Message
 	}
 
 	virtual size_t Size() override { messageSize = sizeof(size_t) * 2 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + sizeof(float) * 16; return messageSize; }
+};
+
+struct MaterialConnectionMessage : public Message
+{
+	size_t materialNameLength;
+	char* materialName;
+
+	MaterialConnectionMessage(size_t nameLength, char* name, size_t materialNameLength, char* materialName)
+		:Message(NODETYPE::MATERIALCONNECTION, MESSAGETYPE::CHANGED, nameLength, name), materialNameLength(materialNameLength + 1), materialName(materialName) {}
+
+	MaterialConnectionMessage(char* data)
+	{
+		size_t location = 0;
+
+		memcpy(&messageSize, data + location, sizeof(size_t));
+		location += sizeof(size_t);
+
+		memcpy(&nodeType, data + location, sizeof(NODETYPE));
+		location += sizeof(NODETYPE);
+
+		memcpy(&messageType, data + location, sizeof(MESSAGETYPE));
+		location += sizeof(MESSAGETYPE);
+
+		memcpy(&nameLength, data + location, sizeof(size_t));
+		location += sizeof(size_t);
+
+		name = new char[nameLength];
+		strcpy_s(name, nameLength, data + location);
+		location += nameLength;
+
+		memcpy(&materialNameLength, data + location, sizeof(size_t));
+		location += sizeof(size_t);
+
+		materialName = new char[materialNameLength];
+		strcpy_s(materialName, materialNameLength, data + location);
+	}
+
+	virtual void* Data() override
+	{
+		size_t location = 0;
+		char* data = new char[Size()];
+
+		memcpy(data, &messageSize, sizeof(size_t));
+		location += sizeof(size_t);
+
+		memcpy(data + location, &nodeType, sizeof(NODETYPE));
+		location += sizeof(NODETYPE);
+
+		memcpy(data + location, &messageType, sizeof(MESSAGETYPE));
+		location += sizeof(MESSAGETYPE);
+
+		memcpy(data + location, &nameLength, sizeof(size_t));
+		location += sizeof(size_t);
+
+		memcpy(data + location, name, nameLength);
+		location += nameLength;
+
+		memcpy(data + location, &materialNameLength, sizeof(size_t));
+		location += sizeof(size_t);
+
+		memcpy(data + location, materialName, materialNameLength);
+		location += materialNameLength;
+
+		return data;
+	}
+
+	virtual size_t Size() override { messageSize = sizeof(size_t) * 3 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + materialNameLength; return messageSize; }
+};
+
+struct MaterialChangedMessage : public Message
+{
+	size_t filePathLength;
+	char* filePath;
+	float color[3];
+
+	MaterialChangedMessage(size_t nameLength, char* name, size_t filePathLength, char* filePath, float color[3])
+		:Message(NODETYPE::MATERIAL, MESSAGETYPE::CHANGED, nameLength, name), filePathLength(filePathLength + 1), filePath(filePath)
+	{
+		memcpy(this->color, color, sizeof(float) * 3);
+	}
+
+	MaterialChangedMessage(char* data)
+	{
+		size_t location = 0;
+
+		memcpy(&messageSize, data + location, sizeof(size_t));
+		location += sizeof(size_t);
+
+		memcpy(&nodeType, data + location, sizeof(NODETYPE));
+		location += sizeof(NODETYPE);
+
+		memcpy(&messageType, data + location, sizeof(MESSAGETYPE));
+		location += sizeof(MESSAGETYPE);
+
+		memcpy(&nameLength, data + location, sizeof(size_t));
+		location += sizeof(size_t);
+
+		name = new char[nameLength];
+		strcpy_s(name, nameLength, data + location);
+		location += nameLength;
+
+		memcpy(&filePathLength, data + location, sizeof(size_t));
+		location += sizeof(size_t);
+
+		if (filePathLength != 1)
+		{
+			filePath = new char[filePathLength];
+			strcpy_s(filePath, filePathLength, data + location);
+			location += filePathLength;
+		}
+
+		memcpy(color, data + location, sizeof(float) * 3);
+	}
+
+	virtual void* Data() override
+	{
+		size_t location = 0;
+		char* data = new char[Size()];
+
+		memcpy(data, &messageSize, sizeof(size_t));
+		location += sizeof(size_t);
+
+		memcpy(data + location, &nodeType, sizeof(NODETYPE));
+		location += sizeof(NODETYPE);
+
+		memcpy(data + location, &messageType, sizeof(MESSAGETYPE));
+		location += sizeof(MESSAGETYPE);
+
+		memcpy(data + location, &nameLength, sizeof(size_t));
+		location += sizeof(size_t);
+
+		memcpy(data + location, name, nameLength);
+		location += nameLength;
+
+		memcpy(data + location, &filePathLength, sizeof(size_t));
+		location += sizeof(size_t);
+
+		if (filePath)
+		{
+			memcpy(data + location, filePath, filePathLength);
+			location += filePathLength;
+		}
+
+		memcpy(data + location, color, sizeof(float) * 3);
+
+		return data;
+	}
+
+	virtual size_t Size() override { messageSize = sizeof(size_t) * 3 + sizeof(NODETYPE) + sizeof(MESSAGETYPE) + nameLength + filePathLength + sizeof(float) * 3; return messageSize; }
 };

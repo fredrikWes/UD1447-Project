@@ -90,6 +90,9 @@ public:
 			matrices.world = mesh->matrix.Transpose();
 			Graphics::UpdateConstantBuffer(matricesBuffer, matrices);
 
+			if (mesh->material)
+				if (mesh->material->texture)
+					mesh->material->texture->Bind();
 			mesh->Draw();
 		}
 	}

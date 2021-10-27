@@ -85,6 +85,23 @@ void Graphics::CreateViewport(UINT clientWidth, UINT clientHeight)
 	viewport.MaxDepth = 1;
 }
 
+HRESULT Graphics::CreateSampler()
+{
+	D3D11_SAMPLER_DESC desc = {};
+
+	desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	desc.MipLODBias = 0.0f;
+	desc.MaxAnisotropy = 1;
+	desc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+	desc.MinLOD = 0;
+	desc.MaxLOD = D3D11_FLOAT32_MAX;
+	
+	return device->CreateSamplerState(&desc, &sampler);
+}
+
 bool Graphics::Initialize(UINT clientWidth, UINT clientHeight, HWND hWnd)
 {
 	if FAILED(CreateDeviceSwapchain(clientWidth, clientHeight, hWnd))
@@ -96,10 +113,14 @@ bool Graphics::Initialize(UINT clientWidth, UINT clientHeight, HWND hWnd)
 	if FAILED(CreateDepthStencil(clientWidth, clientHeight))
 		return false;
 
+	if FAILED(CreateSampler())
+		return false;
+
 	CreateViewport(clientWidth, clientHeight);
 
 	context->RSSetViewports(1, &viewport);
 	context->OMSetRenderTargets(1, &backBuffer, dsView);
+	context->PSSetSamplers(0, 1, &sampler);
 
 	std::cout << ">>> SUCCEDDED TO INITIALIZE GRAPHICS <<<" << std::endl;
 	return true;
@@ -196,6 +217,20 @@ bool Graphics::CreateShaderResourceView(ID3D11ShaderResourceView*& srv, const D3
 	if FAILED(device->CreateShaderResourceView(resource, desc, &srv))
 		return false;
 	return true;
+}
+
+void Graphics::BindShaderResourceView(ID3D11ShaderResourceView* srv, Shader shader, UINT slot)
+{
+	switch (shader)
+	{
+	case Shader::VS:
+		context->VSSetShaderResources(slot, 1, &srv);
+		break;
+
+	case Shader::PS:
+		context->PSSetShaderResources(slot, 1, &srv);
+		break;
+	}
 }
 
 bool Graphics::CreateInputLayout(ID3D11InputLayout*& inputLayout, const D3D11_INPUT_ELEMENT_DESC* desc, UINT numElements, std::string byteCode)
