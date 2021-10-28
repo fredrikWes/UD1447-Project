@@ -56,10 +56,10 @@
     <ClInclude Include="Window.h">
       <Filter>Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Application.h">
-      <Filter>Graphics</Filter>
-    </ClInclude>
     <ClInclude Include="stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Application.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -17,6 +17,7 @@ private:
 	} matrices;
 
 	ID3D11Buffer* colorBuffer = nullptr;
+	ID3D11Buffer* lightBuffer = nullptr;
 
 	//SHADER PATHS
 #ifdef _DEBUG
@@ -51,6 +52,10 @@ public:
 		if (!result)
 			return;
 
+		result = Graphics::CreateConstantBuffer(lightBuffer);
+		if (!result)
+			return;
+
 		//SHADERS
 		std::string byteCode;
 		result = Graphics::CreateShader(vertexShader, vs_path, byteCode);
@@ -79,6 +84,7 @@ public:
 		//BINDINGS
 		Graphics::BindInputLayout(inputLayout);
 		Graphics::BindConstantBuffer(matricesBuffer);
+		Graphics::BindConstantBuffer(lightBuffer, Shader::PS);
 		Graphics::BindConstantBuffer(colorBuffer, Shader::PS, 1);
 		Graphics::BindShaders(vertexShader, colorPixelShader);
 		Graphics::SetTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -88,10 +94,12 @@ public:
 
 	~Renderer()
 	{
+		lightBuffer->Release();
 		colorBuffer->Release();
 		matricesBuffer->Release();
 		vertexShader->Release();
 		pixelShader->Release();
+		colorPixelShader->Release();
 		inputLayout->Release();
 	}
 
@@ -107,23 +115,30 @@ public:
 
 			if (mesh->material)
 			{
-				if (mesh->material->texture)
+				if (mesh->material->texture) //TEXTURE
 				{
 					mesh->material->texture->Bind();
 					Graphics::BindShaders(vertexShader, pixelShader);
 				}
 					
-				else
+				else //ONLY COLOR
 				{
 					Graphics::UpdateConstantBuffer(colorBuffer, mesh->material->color);
 					Graphics::BindShaders(vertexShader, colorPixelShader);
 				}
+			}
+
+			else
+			{
+				Graphics::BindShaders(vertexShader, colorPixelShader);
+				Graphics::UpdateConstantBuffer(colorBuffer, Vector3(0.5f, 0.5f, 0.5f)); // DEFAULT COLOR
 			}
 				
 			mesh->Draw();
 		}
 	}
 
+	void UpdateLightDirection(const Vector3& direction)		{ Graphics::UpdateConstantBuffer(lightBuffer, direction); }
 	void UpdateCameraMatrix(const Matrix& matrix)			{ matrices.viewPerspective = matrix; }
 	void Bind(std::string name, std::shared_ptr<Mesh> mesh) { meshes[name] = mesh; }
 	void Unbind(std::string name)							{ if (meshes.find(name) != meshes.end()) meshes.erase(name); }

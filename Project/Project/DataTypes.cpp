@@ -8,7 +8,7 @@ Mesh::Mesh(const Message& message)
 
 void Mesh::Update(const MeshChangedMessage& message)
 {
-	vertexCount = message.vertexCount;
+	vertexCount = message.numVertices;
 	vertices.resize(vertexCount, Vertex());
 
 	for (UINT i = 0; i < message.numIndices; ++i)

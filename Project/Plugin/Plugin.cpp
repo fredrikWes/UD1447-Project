@@ -15,10 +15,9 @@ SharedMemory memory;
 
 #undef SendMessage
 
-bool SendMessage(Message* message)
+void SendMessage(Message* message)
 {
 	void* data;
-	bool sent = false;
 
 	switch (message->nodeType)
 	{
@@ -27,27 +26,15 @@ bool SendMessage(Message* message)
 			if (message->messageType == MESSAGETYPE::ADDED || message->messageType == MESSAGETYPE::REMOVED)
 			{
 				data = message->Data();
-				sent = memory.Send(data, message->Size());
-				if (sent)
-				{
-					cout << "---SENT MESH ADDED MESSAGE---" << endl;
-					cout << message->name << endl;
-				}
+				memory.Send(data, message->Size());
 				delete data;
 			}
 
 			else if (message->messageType == MESSAGETYPE::CHANGED)
 			{
 				auto meshChanged = static_cast<MeshChangedMessage*>(message);
-				cout << meshChanged->Size() << " " << meshChanged->name << " " << meshChanged->vertices[0].Px << endl;
 				data = meshChanged->Data();
-				sent = memory.Send(data, meshChanged->Size());
-				if (sent)
-				{
-					cout << "---SENT MESH CHANGED MESSAGE---" << endl;
-					cout << meshChanged->name << endl;
-					cout << meshChanged->numIndices << endl;
-				}
+				memory.Send(data, meshChanged->Size());
 					
 				delete data;
 			}
@@ -59,13 +46,7 @@ bool SendMessage(Message* message)
 		{
 			auto transformChanged = static_cast<TransformChangedMessage*>(message);
 			data = transformChanged->Data();
-			sent = memory.Send(data, transformChanged->Size());
-			if (sent)
-			{
-				cout << "---SENT TRANSFORM CHANGED MESSAGE---" << endl;
-				cout << transformChanged->name << endl;
-				cout << transformChanged->matrix[0] << endl;
-			}
+			memory.Send(data, transformChanged->Size());
 			break;
 		}
 
@@ -75,16 +56,10 @@ bool SendMessage(Message* message)
 			{
 				auto cameraChanged = static_cast<CameraChangedMessage*>(message);
 				data = cameraChanged->Data();
-				sent = memory.Send(data, cameraChanged->Size());
-				/*if (sent)
-				{
-					cout << "---SENT CAMERA CHANGED MESSAGE---" << endl;
-					cout << cameraChanged->name << endl;
-					cout << cameraChanged->orthoWidth << endl;
-				}*/
-					
+				memory.Send(data, cameraChanged->Size());		
 				delete data;
 			}
+
 			break;
 		}
 
@@ -116,10 +91,18 @@ bool SendMessage(Message* message)
 			delete data;
 			break;
 		}
+
+		case NODETYPE::NAMECHANGE:
+		{
+			auto nameChange = static_cast<NameChangedMessage*>(message);
+			data = nameChange->Data();
+			memory.Send(data, nameChange->Size());
+			delete data;
+			break;
+		}
 	}
 
 	delete message;
-	return sent;
 }
 
 //MATERIAL CHANGED
@@ -159,10 +142,7 @@ void MaterialChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &oth
 
 		if (colorConnections.length() != 0)
 			return;
-	
-		cout << "\n============================= MATERIAL CHANGED =============================" << endl;
-		cout << shader.name() << endl;
-		cout << shader.color() << endl;
+
 		float color[3];
 		shader.color().get(color);
 		SendMessage(new MaterialChangedMessage(shader.name().numChars(), (char*)shader.name().asChar(), 0, nullptr, color));
@@ -177,20 +157,18 @@ void MaterialChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &oth
 		//FIND CONNECTED SHADERS
 		MPlugArray connections;
 		outColorPlug.connectedTo(connections, false, true);
-	
-		cout << "\n============================= TEXTURE CHANGED =============================" << endl;
+
 		for (UINT i = 0; i < connections.length(); ++i)
 		{
 			string fullName = connections[i].name().asChar();
 			MString shader = fullName.substr(0, fullName.find_first_of('.')).c_str();
-			cout << plug.asString() << endl;
-			cout << shader << endl;
 			float color[4] = { 0,0,0,0 };
 			SendMessage(new MaterialChangedMessage(shader.numChars(), (char*)shader.asChar(), plug.asString().numChars(), (char*)plug.asString().asChar(), color));
 		}
 	}
 }
 
+//NOTIFY THE AFFECTED NODES (CHILDREN)
 void NotifyTransformChanged(const MObject& node)
 {
 	if (node.apiType() != MFn::Type::kTransform)
@@ -225,13 +203,13 @@ void NotifyTransformChanged(const MObject& node)
 		NotifyTransformChanged(dagNode.child(i));
 }
 
+//MESH TRANSFORMED
 void TransformChanged(MObject& node, MDagMessage::MatrixModifiedFlags& modified, void* clientData)
 {	
-	cout << "\n============================= TRANSFORM CHANGED =============================" << endl;
-	cout << MFnDependencyNode(node, &status).name() << endl;
 	NotifyTransformChanged(node);
 }
 
+//CAMERA UPDATED
 void CameraChanged(const MString& str, void* clientData)
 {
 	MString cmd = "getPanel -wf";
@@ -277,6 +255,7 @@ void CameraChanged(const MString& str, void* clientData)
 	}
 }
 
+//MATERIAL CONNECTION OR VERTEX MANIPULATION
 void MeshChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPlug, void* clientData)
 {
 	std::string plugInfo(plug.info().asChar());
@@ -330,8 +309,6 @@ void MeshChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPl
 				if (status != MS::kSuccess)
 					return;
 
-				cout << "\n============================= MATERIAL CONNECTION CHANGED =============================" << endl;
-				cout << "APPLIED MATERIAL: " << surfaceShader.name() << endl;
 				SendMessage(new MaterialConnectionMessage(nodeName.numChars(), (char*)nodeName.asChar(), surfaceShader.name().numChars(), (char*)surfaceShader.name().asChar()));
 			}
 		}
@@ -344,10 +321,15 @@ void MeshChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPl
 		if (!ProcessMesh(mesh, indices, vertices))
 			return;
 
-		cout << "\n============================= GEOMETRY CHANGED =============================" << endl;
-		cout << nodeName << endl;
-		SendMessage(new MeshChangedMessage(NODETYPE::MESH, MESSAGETYPE::CHANGED, nodeName.numChars(), (char*)nodeName.asChar(), indices.data(), indices.size(), vertices.data(), vertices.size(), vertexCache[mesh.name().asChar()].size()));;
+		SendMessage(new MeshChangedMessage(NODETYPE::MESH, MESSAGETYPE::CHANGED, nodeName.numChars(), (char*)nodeName.asChar(), indices.data(), indices.size(), vertices.data(), vertices.size()));
 	}
+}
+
+//NAME CHANGE
+void NodeNameChange(MObject& node, const MString& str, void* clientData)
+{
+	MString newName = MFnDependencyNode(node).name().asChar();
+	SendMessage(new NameChangedMessage(str.numChars(), (char*)str.asChar(), newName.numChars(), (char*)newName.asChar()));
 }
 
 //NODE ADDED
@@ -356,14 +338,12 @@ void NodeAdded(MObject& node, void* clientData)
 	if (node.isNull())
 		return;
 
-	bool found = false;
 	MString nodeName = MFnDependencyNode(node).name();
 
 	switch (node.apiType())
 	{
 		case MFn::Type::kMesh:
 		{
-			found = true;
 			nodeName = MFnDependencyNode(MFnDagNode(node).parent(0)).name();
 			SendMessage(new Message(NODETYPE::MESH, MESSAGETYPE::ADDED, nodeName.numChars(), (char*)nodeName.asChar()));
 			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MeshChanged, NULL, &status));
@@ -372,35 +352,28 @@ void NodeAdded(MObject& node, void* clientData)
 			
 		case MFn::Type::kTransform:
 		{
-			found = true;
 			MFnDagNode dagNode(node);
 			MDagPath dagPath;
 			dagNode.getPath(dagPath);
 			callbackIdArray.append(MDagMessage::addMatrixModifiedCallback(dagPath, TransformChanged, NULL, &status));
+			callbackIdArray.append(MNodeMessage::addNameChangedCallback(node, NodeNameChange, NULL, &status));
 			break;
 		}
 
 		case MFn::Type::kLambert:
 		{
-			found = true;
 			SendMessage(new Message(NODETYPE::MATERIAL, MESSAGETYPE::ADDED, nodeName.numChars(), (char*)nodeName.asChar()));
 			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MaterialChanged, NULL, &status));
+			callbackIdArray.append(MNodeMessage::addNameChangedCallback(node, NodeNameChange, NULL, &status));
 			break;
 		}
 
 		case MFn::Type::kFileTexture:
 		{
-			found = true;;
 			callbackIdArray.append(MNodeMessage::addAttributeChangedCallback(node, MaterialChanged, NULL, &status));
 			break;
 		}
 	}
-
-	if (!found)
-		return;
-
-	cout << "\n============================= NODE ADDED =============================" << endl;
-	cout << "ADDED NODE: " << nodeName << endl;
 }
 
 //NODE REMOVED
@@ -409,32 +382,23 @@ void NodeRemoved(MObject& node, void* clientData)
 	if (node.isNull())
 		return;
 
-	bool found = false;
 	MString nodeName = MFnDependencyNode(node).name();
 
 	switch (node.apiType())
 	{
-		case MFn::Type::kMesh:
+		case MFn::Type::kTransform: // ONLY TRASNFORM FOR NAMING REASONS
 		{
-			found = true;
-			nodeName = MFnDependencyNode(MFnDagNode(node).parent(0)).name();
 			SendMessage(new Message(NODETYPE::MESH, MESSAGETYPE::REMOVED, nodeName.numChars(), (char*)nodeName.asChar()));
 			break;
 		}
 
 		case MFn::Type::kLambert:
 		{
-			found = true;
+			SendMessage(new Message(NODETYPE::MATERIAL, MESSAGETYPE::REMOVED, nodeName.numChars(), (char*)nodeName.asChar()));
 			break;
 		}
 			
 	}
-
-	if (!found)
-		return;
-
-	cout << "\n============================= NODE REMOVED =============================" << endl;
-	cout << "REMOVED NODE: " << nodeName << endl;
 }
 
 //INITIALIZE

@@ -3,8 +3,6 @@
 #include "SharedMemory.h"
 #include <vector>
 
-std::map<std::string, std::vector<Vertex>> vertexCache;
-
 inline Vertex ProcessVertex(MFnMesh& mesh, UINT polygonID, UINT vertexID, MIntArray vertexList)
 {
 	float u, v;
@@ -20,7 +18,7 @@ inline Vertex ProcessVertex(MFnMesh& mesh, UINT polygonID, UINT vertexID, MIntAr
 	Vertex vertex
 	{
 		position.z, position.y, position.x,
-		normal.x, normal.y, normal.z,
+		normal.z, normal.y, normal.x,
 		u, 1 - v
 	};
 
@@ -30,7 +28,7 @@ inline Vertex ProcessVertex(MFnMesh& mesh, UINT polygonID, UINT vertexID, MIntAr
 inline void ProcessTriangle(MFnMesh& mesh, UINT polygonID, MIntArray vertexList, UINT numVertices, std::vector<Vertex>& vertices)
 {
 	for (UINT j = numVertices; j > 0; --j)
-		vertices.emplace_back(ProcessVertex(mesh, polygonID, j -1, vertexList));
+		vertices.emplace_back(ProcessVertex(mesh, polygonID, j - 1, vertexList));
 }
 
 inline void ProcessQuad(MFnMesh& mesh, UINT polygonID, MIntArray vertexList, UINT numVertices, std::vector<Vertex>& vertices)
@@ -69,74 +67,8 @@ inline bool ProcessMesh(MFnMesh& mesh, std::vector<int>& indices, std::vector<Ve
 	if (vertices.empty())
 		return false;
 
-	//FIRST INITIALIZE OF MESH
-	if (vertexCache.find(meshName) == vertexCache.end())
-	{
-		vertexCache[meshName] = vertices;
-		for (UINT i = 0; i < vertices.size(); ++i)
-			indices.emplace_back(i);
-		return true;
-	}
-	
-	//MESH HAS BEEN INITIALIZED AND THEN CHANGED
-	auto oldVertices = vertexCache.at(meshName);
-	vertexCache[meshName] = vertices;
-
-	//SEND ONLY THE CHANGED VERTICES AND THE INDICES
-
-	cout << "OLD SIZE: " << oldVertices.size() << endl;
-	cout << "NEW SIZE: " << vertices.size() << endl;
-
-	for (UINT i = vertices.size(); i > 0; --i)
-	{
-		UINT index = i - 1;
-		cout << "VERTEX: " << index << endl;
-
-		//if (i > oldVertices.size())
-		//	indices.emplace_back(index);
-		//else
-		//{
-		//	if (vertices[index] == oldVertices[index])
-		//		vertices.erase(vertices.begin() + index);
-		//	else
-		//		indices.emplace_back(index);
-		//}
-
-		indices.emplace_back(index);
-	}
-
-	/*
 	for (UINT i = 0; i < vertices.size(); ++i)
-	{
-		if (currentIndex < oldVertices.size())
-		{
-			if (vertices[i] == oldVertices[currentIndex])
-			{
-				cout << "VERTEX INDEX " << currentIndex << " WAS THE SAME AS NEW " << i << endl;
-				vertices.erase(vertices.begin() + i);
-				++currentIndex;
-				--i;
-			}
-
-			else
-			{
-				cout << "CHANGED VERTEX INDEX: " << currentIndex << endl;
-				indices.emplace_back(currentIndex);
-			}
-		}
-
-		else
-		{
-			cout << "CHANGED VERTEX INDEX: " << i << endl;
-			indices.emplace_back(i);
-		}
-	}
-	*/
-
-	if (indices.empty())
-		return false;
-
-	cout << "CHANGED " << indices.size() << " VERTICES";
+		indices.emplace_back(i);
 
 	return true;
 }

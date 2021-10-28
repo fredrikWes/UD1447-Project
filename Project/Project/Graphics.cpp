@@ -128,6 +128,7 @@ bool Graphics::Initialize(UINT clientWidth, UINT clientHeight, HWND hWnd)
 
 void Graphics::ShutDown()
 {
+	sampler->Release();
 	dsView->Release();
 	dsTexture->Release();
 	backBuffer->Release();

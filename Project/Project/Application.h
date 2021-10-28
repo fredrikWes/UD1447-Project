@@ -20,12 +20,7 @@ public:
 
 		Graphics::Initialize(window.ClientWidth(), window.ClientHeight(), window.GetHWND());
 
-		Matrix viewMatrix = Matrix::CreateLookAt({ 10.0f, 0.0f, 10.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
-		Matrix perspectiveMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XM_PIDIV4, (float)window.ClientWidth() / window.ClientHeight(), 0.1f, 100.0f);
-
 		renderer = std::make_unique<Renderer>();
-
-		renderer->UpdateCameraMatrix((viewMatrix * perspectiveMatrix).Transpose());
 	}
 
 	~Application()
@@ -84,12 +79,17 @@ public:
 
 						if (nodes.find(message.name) != nodes.end())
 							std::dynamic_pointer_cast<Mesh>(nodes[message.name])->Update(message);
+
+						delete message.name;
 					}
 
 					if (msg->messageType == MESSAGETYPE::REMOVED)
 					{
-						renderer->Unbind(msg->name);
-						nodes.erase(msg->name);
+						if (nodes.find(msg->name) != nodes.end())
+						{
+							renderer->Unbind(msg->name);
+							nodes.erase(msg->name);
+						}
 					}
 
 					break;
@@ -120,7 +120,8 @@ public:
 
 						std::dynamic_pointer_cast<Mesh>(nodes[message.name])->matrix = matrix;
 					}
-						
+
+					delete message.name;
 					break;
 				}
 
@@ -131,10 +132,13 @@ public:
 						CameraChangedMessage message = CameraChangedMessage(data);
 
 						Matrix viewMatrix, perspectiveMatrix;
+						Vector4 eyePos = Vector4(message.eyePos[2], message.eyePos[1], message.eyePos[0], message.eyePos[3]);
+						Vector4 center = Vector4(message.center[2], message.center[1], message.center[0], message.center[3]);
+						Vector3 lightDirection = Vector3{ (center - eyePos).x, (center - eyePos).y, (center - eyePos).z };
+						std::swap(lightDirection.x, lightDirection.z);
+						lightDirection.Normalize();
 
-						viewMatrix = DirectX::XMMatrixLookAtLH(Vector4(message.eyePos[2], message.eyePos[1], message.eyePos[0], message.eyePos[3]),
-							Vector4(message.center[2], message.center[1], message.center[0], message.center[3]),
-							Vector3((float)message.up[2], (float)message.up[1], (float)message.up[0]));
+						viewMatrix = DirectX::XMMatrixLookAtLH(eyePos, center, Vector3((float)message.up[2], (float)message.up[1], (float)message.up[0]));
 
 						float aspectRatio = (float)message.portWidth / message.portHeight;
 						float orthoAspectRatio = (float)message.portHeight / message.portWidth;
@@ -149,7 +153,9 @@ public:
 
 						Matrix finalMatrix = Matrix((viewMatrix * perspectiveMatrix).Transpose());
 
+						renderer->UpdateLightDirection(lightDirection);
 						renderer->UpdateCameraMatrix(finalMatrix);
+						delete message.name;
 					}
 
 					break;
@@ -161,6 +167,9 @@ public:
 					{
 						MaterialChangedMessage message(data);
 						std::dynamic_pointer_cast<Material>(nodes[message.name])->Update(message);
+						delete message.name;
+						if (message.filePathLength != 1)
+							delete message.filePath;
 					}
 
 					else if (msg->messageType == MESSAGETYPE::ADDED)
@@ -171,8 +180,21 @@ public:
 
 					else if (msg->messageType == MESSAGETYPE::REMOVED)
 					{
-				
+						if (nodes.find(msg->name) != nodes.end())
+							nodes.erase(msg->name);
+
+						for (auto& [name, node] : nodes)
+						{
+							auto mesh = std::dynamic_pointer_cast<Mesh>(node);
+							if (mesh)
+							{
+								if (mesh->material)
+									if (mesh->material->name == msg->name)
+										mesh->material = nullptr;
+							}
+						}
 					}
+
 					break;
 				}
 
@@ -181,10 +203,33 @@ public:
 					MaterialConnectionMessage message(data);
 					if (nodes.find(message.name) != nodes.end())
 						std::dynamic_pointer_cast<Mesh>(nodes[message.name])->material = std::dynamic_pointer_cast<Material>(nodes[message.materialName]);
+					delete message.name;
+					delete message.materialName;
+					break;
+				}
+
+				case NODETYPE::NAMECHANGE:
+				{
+					NameChangedMessage message(data);
+					std::cout << "===========================" << std::endl;
+					std::cout << message.name << std::endl;
+					std::cout << message.newName << std::endl;
+
+					if (nodes.find(message.name) != nodes.end())
+					{
+						nodes[message.name]->name = message.newName;
+						nodes[message.newName] = nodes[message.name];
+						nodes.erase(message.name);
+					}
+
+					delete message.name;
+					delete message.newName;
 					break;
 				}
 
 				}
+
+				delete msg->name;
 
 				if (msg)
 					delete msg;
