@@ -5,7 +5,7 @@
 struct FileMap
 {
 	const std::string name = "FILEMAP";
-	const size_t size = 100;
+	const size_t size = 200 * 1000 * 1024;
 
 	HANDLE object;
 	void* view = nullptr;

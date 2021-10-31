@@ -119,12 +119,13 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);MAYAAPI_EXPORTS;NT_PLUGIN;REQUIRE_IOSTREAM</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)/SharedMemory;D:\Autodesk\Maya2022\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)/x64/Debug;D:\Autodesk\Maya2022\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Foundation.lib;OpenMaya.lib;OpenMayaAnim.lib;SharedMemory.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Foundation.lib;OpenMaya.lib;OpenMayaAnim.lib;SharedMemory.lib;OpenMayaUI.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -136,6 +137,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);MAYAAPI_EXPORTS;NT_PLUGIN;REQUIRE_IOSTREAM</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)/SharedMemory;D:\Autodesk\Maya2022\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -143,10 +145,11 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)/x64/Debug;D:\Autodesk\Maya2022\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Foundation.lib;OpenMaya.lib;OpenMayaAnim.lib;SharedMemory.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Foundation.lib;OpenMaya.lib;OpenMayaAnim.lib;SharedMemory.lib;OpenMayaUI.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="HelpFunctions.h" />
     <ClInclude Include="MayaIncludes.h" />
   </ItemGroup>
   <ItemGroup>

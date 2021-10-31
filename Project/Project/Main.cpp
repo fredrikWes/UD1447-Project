@@ -1,44 +1,10 @@
-#include "SharedMemory.h"
+#include "Application.h"
+#include "DataTypes.h"
 
-int main()
+int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow)
 {
-	SharedMemory memory;
-	bool exit = false;
+	Application app(hInstance);
+	app.Run();
 
-	while (!exit)
-	{
-		if (GetAsyncKeyState(VK_RETURN))
-			exit = true;
-
-		char* data = new char[memory.MemorySize() / 2];
-		size_t msgSize = 0;
-
-		bool received = false;
-		while (!received)
-			received = memory.Receive(data, msgSize);
-
-		Message* msg = new Message(data);
-
-		switch (msg->type)
-		{
-		case NODETYPE::MESH:
-		{
-			NodeAddedMessage nodeMsg(data);
-			std::cout << nodeMsg.messageSize << " " << nodeMsg.nameLength << " " << (UINT)nodeMsg.type << " " << nodeMsg.name << std::endl;
-			break;
-		}
-
-		case NODETYPE::POINTLIGHT:
-		{
-			NodeAddedMessage nodeMsg(data);
-			std::cout << nodeMsg.messageSize << " " << nodeMsg.nameLength << " " << (UINT)nodeMsg.type << " " << nodeMsg.name << std::endl;
-			break;
-		}
-		}
-
-		delete[] data;
-	}
-
-	(void)getchar();
 	return 0;
 }

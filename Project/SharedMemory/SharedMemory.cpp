@@ -76,10 +76,5 @@ bool SharedMemory::Receive(void* data, size_t& size)
     buffer.tail += size;
     buffer.SetTail(fileMap.view);
 
-    std::cout << "================================" << std::endl;
-    std::cout << "HEAD: " << buffer.head << " " << (int)*((char*)fileMap.view + CircularBuffer::dataLocation + buffer.head) << std::endl;
-    std::cout << "TAIL: " << buffer.tail << " " << (int)*((char*)fileMap.view + CircularBuffer::dataLocation + buffer.tail) << std::endl;
-    std::cout << "SIZE: " << buffer.size << " " << std::endl;
-
     return true;
 }
